@@ -84,6 +84,9 @@ router.post('/', async (req, res) => {
       
       console.log(`Found video: ${videoInfo.title}`);
       
+
+      // '--ffmpeg-location', '/opt/homebrew/bin/ffmpeg', //for my local mac
+
       // Download audio with yt-dlp directly to MP3
       const downloadArgs = [
         '--extract-audio',
@@ -92,7 +95,7 @@ router.post('/', async (req, res) => {
         '--output', tempMp3Path,
         '--no-playlist',
         '--no-warnings',
-        '--ffmpeg-location', '/opt/homebrew/bin/ffmpeg', // Specify ffmpeg location
+        '--ffmpeg-location', '/usr/bin/ffmpeg',
         url
       ];
       

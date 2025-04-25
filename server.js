@@ -33,7 +33,7 @@ if (!fs.existsSync(downloadsDir)) {
 // Setup API routes
 app.use('/api', routes);
 
-// Clean up old downloads (files older than 1 hour)
+// Clean up old downloads (files older than 30 minutes)
 setInterval(() => {
   fs.readdir(downloadsDir, (err, files) => {
     if (err) return;
