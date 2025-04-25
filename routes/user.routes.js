@@ -89,7 +89,7 @@ router.post('/signup', async (req, res) => {
   });
 
 
-router.get('/test', protect, async (req, res) => {
+router.get('/test', async (req, res) => {
   res.json({ success: true, message: 'Test successful' });
 });
 
