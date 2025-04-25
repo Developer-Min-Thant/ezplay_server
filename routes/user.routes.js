@@ -86,9 +86,9 @@ router.post('/signup', async (req, res) => {
         error: error.message
       });
     }
-  });
+});
 
-
+// Test route
 router.get('/test', async (req, res) => {
   res.json({ success: true, message: 'Test successful' });
 });
