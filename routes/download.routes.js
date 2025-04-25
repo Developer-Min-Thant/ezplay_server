@@ -21,7 +21,8 @@ if (!fs.existsSync(downloadsDir)) {
 const youtubeRegex = /^(https?:\/\/)?(www\.|m\.)?(youtube\.com|youtu\.?be)\/.+/;
 
 // Initialize yt-dlp with the system-installed binary
-const ytDlp = new YTDlpWrap('/opt/homebrew/bin/yt-dlp');
+// const ytDlp = new YTDlpWrap('/opt/homebrew/bin/yt-dlp');
+const ytDlp= new YTDlpWrap("/usr/local/bin/yt-dlp");
 
 // Check if yt-dlp is available
 ytDlp.getVersion()
