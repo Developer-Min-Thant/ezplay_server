@@ -34,9 +34,9 @@ router.post('/', async (req, res) => {
   const { url } = req.body;
 
   // update the user totalDownloads
-  const user = await User.findOne({ phone: req.user.phone });
-  user.totalDownloads += 1;
-  await user.save();
+  // const user = await User.findOne({ phone: req.user.phone });
+  // user.totalDownloads += 1;
+  // await user.save();
 
   if (!url) {
     return res.status(400).json({ error: 'URL is required' });
