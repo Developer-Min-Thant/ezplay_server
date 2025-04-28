@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+// todo::check mongodb give db url i can directly connect like mongodb
 const userSchema = new mongoose.Schema({
   uid: {
     type: String,

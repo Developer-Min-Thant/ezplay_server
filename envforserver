@@ -1,0 +1,18 @@
+module.exports = {
+  apps: [
+    {
+      name: "ezplay",     // 🔥 Change this to your app name
+      script: "server.js",         // 🔥 Entry point of your app
+      instances: 1,               // Or 'max' for all CPU cores
+      autorestart: true,
+      watch: false,               // Set to true if you want PM2 to watch file changes
+      max_memory_restart: "500M", // Restart if memory exceeds 500MB
+      env: {
+        NODE_ENV: "development",
+      },
+      env_production: {
+        NODE_ENV: "production",
+      },
+    },
+  ],
+};

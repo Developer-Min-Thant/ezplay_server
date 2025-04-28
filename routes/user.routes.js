@@ -103,6 +103,8 @@ router.post('/social-login', async (req, res) => {
   try {
     const { uid, name, deviceId, provider, token } = req.body;
 
+    console.log('Social login request:', { uid, name, deviceId, provider, token });
+
 
     //Todo:: need to check if token is valid here 
     // check with supabase auth secret or use the same secret
