@@ -112,6 +112,8 @@ router.post('/social-login', async (req, res) => {
     // Check if user exists
     const user = await User.findOne({ uid });
 
+    // Todo:: only response the object id of mongodb do not use uid of supabase
+    
 
     if (!user) {
       // create one 
@@ -126,8 +128,8 @@ router.post('/social-login', async (req, res) => {
 
       res.status(201).json({
         success: true,
+        uid: user._id,
         name: user.name,
-        uid: user.uid,
         token: authToken,
         ispremiumActive: user.ispremiumActive, // only for show 
         premiumExpirationDate: user.premiumExpirationDate // only for show 
@@ -142,8 +144,8 @@ router.post('/social-login', async (req, res) => {
       // Return user data (excluding password) and token
       res.status(200).json({
         success: true,
+        uid: user._id,
         name: user.name,
-        uid: user.uid,
         token: authToken,
         ispremiumActive: user.ispremiumActive, // only for show 
         premiumExpirationDate: user.premiumExpirationDate // only for show 
