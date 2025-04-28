@@ -2,6 +2,10 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
+  uid: {
+    type: String,
+    unique: true,
+  },
   name: {
     type: String,
     required: [true, 'Name is required'],
@@ -9,15 +13,19 @@ const userSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    required: [true, 'Phone number is required'],
     trim: true,
     unique: true,
+    sparse: true
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
     minlength: 6,
     select: false // Don't return password by default
+  },
+  provider: {
+    type: String,
+    enum: ['local', 'google', 'apple'],
+    default: 'local'
   },
   totalDownloads: {
     type: Number,
@@ -30,15 +38,18 @@ const userSchema = new mongoose.Schema({
   premiumStartDate: {
     type: Date
   },
-  premiumExpiryDate: {
+  premiumExpirationDate: {
     type: Date
+  },
+  deviceId: {
+    type: String,
   }
 });
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {
-  // Only hash the password if it's modified (or new)
-  if (!this.isModified('password')) return next();
+  // Only hash the password if it's modified (or new) and exists
+  if (!this.password || !this.isModified('password')) return next();
   
   try {
     const salt = await bcrypt.genSalt(10);

@@ -111,6 +111,9 @@ Find the lines with `--ffmpeg-location` and update them to:
 '--ffmpeg-location', '/usr/bin/ffmpeg', // Specify ffmpeg location
 ```
 
+also yt-dlp
+<!-- const ytDlp= new YTDlpWrap("/usr/local/bin/yt-dlp"); -->
+
 ## Step 7: Set Up Environment Variables
 
 Create a `.env` file for environment variables:
