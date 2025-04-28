@@ -157,10 +157,10 @@ router.post('/social-login', async (req, res) => {
 // Todo:: need token
 router.post('/check-user', async (req, res) => {
   try {
-    const { phone, deviceId } = req.body;
+    const { uid, deviceId } = req.body;
 
     // Check if user exists
-    const user = await User.findOne({ phone });
+    const user = await User.findOne({ uid });
     if (!user) {
       return res.status(404).json({
         success: false,
