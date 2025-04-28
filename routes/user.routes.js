@@ -111,7 +111,7 @@ router.post('/social-login', async (req, res) => {
 
     // Check if user exists
     const user = await User.findOne({ uid });
-    const authToken = generateToken(user._id, 'user', user.ispremiumActive);
+
 
     if (!user) {
       // create one 
@@ -122,6 +122,8 @@ router.post('/social-login', async (req, res) => {
         ispremiumActive: false,
         provider
       });
+      const authToken = generateToken(user._id, 'user', user.ispremiumActive);
+
       res.status(201).json({
         success: true,
         name: user.name,
@@ -135,6 +137,8 @@ router.post('/social-login', async (req, res) => {
       user.deviceId = deviceId;
       await user.save();
     }
+
+    const authToken = generateToken(user._id, 'user', user.ispremiumActive);
 
     // Return user data (excluding password) and token
     res.status(200).json({
