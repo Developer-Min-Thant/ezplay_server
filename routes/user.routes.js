@@ -136,19 +136,21 @@ router.post('/social-login', async (req, res) => {
       // Update user's deviceId
       user.deviceId = deviceId;
       await user.save();
+
+      const authToken = generateToken(user._id, 'user', user.ispremiumActive);
+
+      // Return user data (excluding password) and token
+      res.status(200).json({
+        success: true,
+        name: user.name,
+        uid: user.uid,
+        token: authToken,
+        ispremiumActive: user.ispremiumActive, // only for show 
+        premiumExpirationDate: user.premiumExpirationDate // only for show 
+      });
     }
 
-    const authToken = generateToken(user._id, 'user', user.ispremiumActive);
 
-    // Return user data (excluding password) and token
-    res.status(200).json({
-      success: true,
-      name: user.name,
-      uid: user.uid,
-      token: authToken,
-      ispremiumActive: user.ispremiumActive, // only for show 
-      premiumExpirationDate: user.premiumExpirationDate // only for show 
-    });
   } catch (error) {
     console.error('Social login error:', error);
     res.status(500).json({
