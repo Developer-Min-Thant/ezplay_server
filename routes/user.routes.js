@@ -73,11 +73,13 @@ router.post('/phone-login', async (req, res) => {
       */
 
       // send otp
-      const response = await axios.post('https://v3.smspoh.com/api/otp/request', {
-        from: 'SMSPoh',
-        to: phone,
-        brand: 'SMSPoh',
-        accessToken: process.env.SMSPOH_ACCESS_TOKEN
+      const response = await axios.post('https://v3.smspoh.com/api/otp/request', null, {
+        params: {
+          from: 'SMSPoh',
+          to: phone,
+          brand: 'SMSPoh',
+          accessToken: process.env.SMSPOH_ACCESS_TOKEN
+        }
       });
 
       console.log('OTP sent successfully:', response.data);
@@ -107,12 +109,14 @@ router.post('verify-otp', async (req, res) => {
     https://v3.smspoh.com/api/otp/verify?requestId=123456789&code=1234&accessToken=U01TUG9oVjNBUElLZXk6U01TUG9oVjNBUElTZWNyZXQ= POST
     */
 
-    const response = await axios.post('https://v3.smspoh.com/api/otp/verify', {
-      requestId,
-      code: otp,
-      accessToken: process.env.SMSPOH_ACCESS_TOKEN
+    const response = await axios.post('https://v3.smspoh.com/api/otp/verify', null, {
+      params: {
+        requestId,
+        code: otp,
+        accessToken: process.env.SMSPOH_ACCESS_TOKEN
+      }
     });
-
+    
     console.log('OTP verification response:', response.data);
 
     if(!response.data.success) {
