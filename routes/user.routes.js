@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/user.model');
 const { generateToken } = require('../middleware/auth');
+const axios = require('axios');
   
 // Login route
 router.post('/login', async (req, res) => {
