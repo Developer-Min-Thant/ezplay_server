@@ -1,4 +1,6 @@
 const ChatMessage = require("../models/chat.model");
+const express = require('express');
+const router = express.Router();
 
 // Todo:: need token
 // post chat message
@@ -50,3 +52,5 @@ router.get('/chat', async (req, res) => {
     }
   });
 
+
+module.exports = router;
