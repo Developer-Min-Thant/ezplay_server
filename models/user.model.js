@@ -42,11 +42,12 @@ const userSchema = new mongoose.Schema({
   },
   deviceId: {
     type: String,
+    required: true,
   },
-  count: {
+  downloadCount: {
     type: Number,
     required: true,
-    default: 1,
+    default: 0,
   },
 });
 
