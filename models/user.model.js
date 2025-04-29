@@ -44,11 +44,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  downloadCount: {
-    type: Number,
-    required: true,
-    default: 0,
-  },
 });
 
 // Hash password before saving
