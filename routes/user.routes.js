@@ -116,6 +116,8 @@ router.post('/verify-otp', async (req, res) => {
         accessToken: process.env.SMSPOH_ACCESS_TOKEN
       }
     });
+
+    console.log('OTP verification response:', response.data, response.status);
     
     if(response.status !== 201) {
       return res.status(400).json({
