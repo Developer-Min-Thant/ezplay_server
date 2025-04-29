@@ -77,7 +77,7 @@ router.post('/phone-login', async (req, res) => {
         params: {
           from: 'SMSPoh',
           to: phone,
-          brand: 'SMSPoh',
+          brand: 'MPT',
           accessToken: process.env.SMSPOH_ACCESS_TOKEN
         }
       });
