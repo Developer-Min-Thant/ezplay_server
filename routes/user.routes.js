@@ -117,9 +117,7 @@ router.post('/verify-otp', async (req, res) => {
       }
     });
     
-    console.log('OTP verification response:', response.data);
-
-    if(!response.data.success) {
+    if(response.status !== 201) {
       return res.status(400).json({
         success: false,
         message: 'Invalid OTP'
