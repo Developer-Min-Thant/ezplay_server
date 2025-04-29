@@ -75,9 +75,9 @@ router.post('/phone-login', async (req, res) => {
       // send otp
       const response = await axios.post('https://v3.smspoh.com/api/otp/request', null, {
         params: {
-          from: 'SMSPoh',
+          from: 'SMSPohTest',
           to: phone,
-          brand: 'MPT',
+          brand: 'SMSPohTest',
           accessToken: process.env.SMSPOH_ACCESS_TOKEN
         }
       });
