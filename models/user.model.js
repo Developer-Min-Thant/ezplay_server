@@ -42,7 +42,17 @@ const userSchema = new mongoose.Schema({
   },
   deviceId: {
     type: String,
-  }
+  },
+  date: {
+    type: String, // Format: 'YYYY-MM-DD'
+    required: true,
+    index: true,
+  },
+  count: {
+    type: Number,
+    required: true,
+    default: 1,
+  },
 });
 
 // Hash password before saving

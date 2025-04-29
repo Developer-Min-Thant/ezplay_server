@@ -3,7 +3,8 @@ const router = express.Router();
 const User = require('../models/user.model');
 const { generateToken } = require('../middleware/auth');
 const axios = require('axios');
-  
+const OtpRequest = require("../models/otpRequest.model");
+
 // Login route
 router.post('/login', async (req, res) => {
   try {
@@ -58,6 +59,12 @@ router.post('/login', async (req, res) => {
 router.post('/phone-login', async (req, res) => {
     try {
       const { phone } = req.body;
+      const today = new Date().toISOString().split('T')[0];
+      const record = await OtpRequest.findOne({ phone, date: today });
+
+      if (record && record.count >= 3) {
+        return res.status(429).json({ message: 'You have reached the OTP resend limit for today' });
+      }
   
       // Check if user already exists
       const existingUser = await User.findOne({ phone });
@@ -67,7 +74,7 @@ router.post('/phone-login', async (req, res) => {
           message: 'User with this phone number already exists'
         });
       }
-
+  
       /*
       https://v3.smspoh.com/api/otp/request?from=SMSPoh&to=099*******&brand=SMSPoh&accessToken=U01TUG9oVjNBUElLZXk6U01TUG9oVjNBUElTZWNyZXQ= POST
       */
@@ -82,7 +89,14 @@ router.post('/phone-login', async (req, res) => {
         }
       });
 
-      console.log('OTP sent successfully:', response.data);
+
+      if (record) {
+        record.count += 1;
+        await record.save();
+      } else {
+        await OtpRequest.create({ phone, date: today, count: 1 });
+      }
+
 
       res.status(200).json({
         success: true,

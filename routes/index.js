@@ -4,9 +4,11 @@ const router = express.Router();
 // Import role-based routes
 const userRoutes = require('./user.routes');
 const downloadRoutes = require('./download.routes');
+const chatRoutes = require('./chat.routes');
 
 // Use role-based routes
 router.use('/user', userRoutes);
 router.use('/download', downloadRoutes);
+router.use('/chat', chatRoutes);
 
 module.exports = router;
