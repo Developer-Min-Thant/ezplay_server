@@ -100,7 +100,7 @@ router.post('/phone-login', async (req, res) => {
     }
 });
 
-router.post('verify-otp', async (req, res) => {
+router.post('/verify-otp', async (req, res) => {
   try {
     const { name, deviceId, password, phone, otp, requestId } = req.body;
 
