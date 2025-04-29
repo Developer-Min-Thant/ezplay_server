@@ -54,9 +54,9 @@ router.post('/login', async (req, res) => {
 });
 
 // sign up with phone number
-router.post('/register', async (req, res) => {
+router.post('/phone-login', async (req, res) => {
     try {
-      const { name, phone, password, deviceId } = req.body;
+      const { phone } = req.body;
   
       // Check if user already exists
       const existingUser = await User.findOne({ phone });
@@ -66,27 +66,27 @@ router.post('/register', async (req, res) => {
           message: 'User with this phone number already exists'
         });
       }
-  
-      const user = await User.create({
-        name,
-        phone,
-        deviceId,
-        password,
-        ispremiumActive: false
+
+      /*
+      https://v3.smspoh.com/api/otp/request?from=SMSPoh&to=099*******&brand=SMSPoh&accessToken=U01TUG9oVjNBUElLZXk6U01TUG9oVjNBUElTZWNyZXQ= POST
+      */
+
+      // send otp
+      const response = await axios.post('https://v3.smspoh.com/api/otp/request', {
+        from: 'SMSPoh',
+        to: phone,
+        brand: 'SMSPoh',
+        accessToken: process.env.SMSPOH_ACCESS_TOKEN
       });
 
-      const token = generateToken(user._id, 'user', user.ispremiumActive);
+      console.log('OTP sent successfully:', response.data);
 
-  
-      // Return user data (excluding password) and token
-      res.status(201).json({
+      res.status(200).json({
         success: true,
-        name: user.name,
-        uid: user._id,
-        token,
-        ispremiumActive: user.ispremiumActive, // only for show 
-        premiumExpirationDate: user.premiumExpirationDate // only for show 
+        requestId: response.data.requestId,
+        message: 'OTP sent successfully'
       });
+
     } catch (error) {
       console.error('Registration error:', error);
       res.status(500).json({
@@ -95,6 +95,59 @@ router.post('/register', async (req, res) => {
         error: error.message
       });
     }
+});
+
+router.post('verify-otp', async (req, res) => {
+  try {
+    const { name, deviceId, password, phone, otp, requestId } = req.body;
+
+    // Verify OTP
+    /*
+    https://v3.smspoh.com/api/otp/verify?requestId=123456789&code=1234&accessToken=U01TUG9oVjNBUElLZXk6U01TUG9oVjNBUElTZWNyZXQ= POST
+    */
+
+    const response = await axios.post('https://v3.smspoh.com/api/otp/verify', {
+      requestId,
+      code: otp,
+      accessToken: process.env.SMSPOH_ACCESS_TOKEN
+    });
+
+    console.log('OTP verification response:', response.data);
+
+    if(!response.data.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid OTP'
+      });
+    }
+
+    const user = await User.create({
+      name,
+      phone,
+      deviceId,
+      password,
+      ispremiumActive: false
+    });
+    const token = generateToken(user._id, 'user', user.ispremiumActive);
+
+    // Return user data (excluding password) and token
+    res.status(201).json({
+      success: true,
+      name: user.name,
+      uid: user._id,
+      token,
+      ispremiumActive: user.ispremiumActive, // only for show 
+      premiumExpirationDate: user.premiumExpirationDate // only for show 
+    });
+
+  } catch (error) {
+    console.error('OTP verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during OTP verification',
+      error: error.message
+    });
+  }
 });
 
 // sign up with social
@@ -162,7 +215,6 @@ router.post('/social-login', async (req, res) => {
     });
   }
 });
-
 
 // Todo:: need token
 router.post('/check-user', async (req, res) => {
