@@ -125,6 +125,7 @@ router.post('/verify-otp', async (req, res) => {
     }
 
     const user = await User.create({
+      uid: requestId,
       name,
       phone,
       deviceId,
