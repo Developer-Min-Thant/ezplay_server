@@ -30,13 +30,12 @@ ytDlp.getVersion()
   .catch(err => console.error('Error with yt-dlp:', err));
 
 // Download MP3 route
-router.post('/', async (req, res) => {
+router.post('/', protect, checkDownloadEligibility, async (req, res) => {
   const { url } = req.body;
 
   // update the user totalDownloads
-  // const user = await User.findOne({ phone: req.user.phone });
-  // user.totalDownloads += 1;
-  // await user.save();
+  req.user.totalDownloads += 1;
+  await req.user.save();
 
   if (!url) {
     return res.status(400).json({ error: 'URL is required' });

@@ -1,13 +1,15 @@
 const ChatMessage = require("../models/chat.model");
 const express = require('express');
 const router = express.Router();
+const { protect } = require('../middleware/auth');
 
 // Todo:: need token
 // post chat message
-router.post('/chat', async (req, res) => {
+router.post('/', protect, async (req, res) => {
     try {
-        // Todo:: isAdmin need to get from token 
-      const { uid, message, type, sender, isAdmin, imagePath, pricingPlan } = req.body;
+      const user = req.user;
+      const isAdmin = user.isAdmin;
+      const { uid, message, type, sender, imagePath, pricingPlan } = req.body;
       const chatMessage = await ChatMessage.create({
         uid,
         message,
@@ -28,16 +30,16 @@ router.post('/chat', async (req, res) => {
         error: error.message
       });
     }
-  });
+});
 
-  // Todo:: need token
+// Todo:: need token
 // get chat messages
-router.get('/chat', async (req, res) => {
+router.get('/', protect, async (req, res) => {
     try {
       const uid = req.query.uid;
       const chatMessages = await ChatMessage.find({
         uid
-      }).sort({ createdAt: -1 }).limit(100);
+      }).sort({ createdAt: -1 }).limit(50);
 
       res.status(200).json({
         success: true,
@@ -50,7 +52,7 @@ router.get('/chat', async (req, res) => {
         error: error.message
       });
     }
-  });
+});
 
 
 module.exports = router;

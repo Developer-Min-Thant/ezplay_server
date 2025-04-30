@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const mongoose = require('mongoose');
 const User = require('../models/user.model');
 const { generateToken } = require('../middleware/auth');
 const axios = require('axios');
@@ -35,13 +34,13 @@ router.post('/login', async (req, res) => {
     await user.save();
 
     // Generate JWT token with user role
-    const token = generateToken(user._id, 'user', user.ispremiumActive);
+    const token = generateToken(user.uid, 'user', user.ispremiumActive);
 
     // Return user data (excluding password) and token
     res.status(200).json({
       success: true,
       name: user.name,
-      uid: user._id,
+      uid: user.uid,
       token,
       ispremiumActive: user.ispremiumActive,
       premiumExpirationDate: user.premiumExpirationDate
@@ -151,13 +150,13 @@ router.post('/verify-otp', async (req, res) => {
     // Update the user with its own _id as the uid
     user.uid = user._id.toString();
     await user.save();
-    const token = generateToken(user._id, 'user', user.ispremiumActive);
+    const token = generateToken(user.uid, 'user', user.ispremiumActive);
 
     // Return user data (excluding password) and token
     res.status(201).json({
       success: true,
       name: user.name,
-      uid: user._id,
+      uid: user.uid,
       token,
       ispremiumActive: user.ispremiumActive, // only for show 
       premiumExpirationDate: user.premiumExpirationDate // only for show 
@@ -175,26 +174,17 @@ router.post('/verify-otp', async (req, res) => {
 
 // sign up with social
 router.post('/social-login', async (req, res) => {
- // check with supeabase auth secret or use the same secret
   try {
     const { uid, name, deviceId, provider, token } = req.body;
 
     console.log('Social login request:', { uid, name, deviceId, provider, token });
 
 
-    //Todo:: need to check if token is valid here 
+    // (Later)Todo:: need to check if token is valid here 
     // check with supabase auth secret or use the same secret
 
     // Check if user exists
-    // Convert the uid string to ObjectId if it's a valid ObjectId format, otherwise use it as is
-    let query = { uid };
-    if (mongoose.Types.ObjectId.isValid(uid)) {
-      query = { uid: new mongoose.Types.ObjectId(uid) };
-    }
-    const user = await User.findOne(query);
-
-    // Todo:: only response the object id of mongodb do not use uid of supabase
-    
+    const user = await User.findOne({ uid });    
 
     if (!user) {
       // create one 
@@ -209,11 +199,11 @@ router.post('/social-login', async (req, res) => {
       // Update the user with its own _id as the uid
       user.uid = user._id.toString();
       await user.save();
-      const authToken = generateToken(user._id, 'user', user.ispremiumActive);
+      const authToken = generateToken(user.uid, 'user', user.ispremiumActive);
 
       res.status(201).json({
         success: true,
-        uid: user._id,
+        uid: user.uid,
         name: user.name,
         token: authToken,
         ispremiumActive: user.ispremiumActive, // only for show 
@@ -224,12 +214,12 @@ router.post('/social-login', async (req, res) => {
       user.deviceId = deviceId;
       await user.save();
 
-      const authToken = generateToken(user._id, 'user', user.ispremiumActive);
+      const authToken = generateToken(user.uid, 'user', user.ispremiumActive);
 
       // Return user data (excluding password) and token
       res.status(200).json({
         success: true,
-        uid: user._id,
+        uid: user.uid,
         name: user.name,
         token: authToken,
         ispremiumActive: user.ispremiumActive, // only for show 
@@ -248,26 +238,11 @@ router.post('/social-login', async (req, res) => {
   }
 });
 
-// Todo:: need token
-router.post('/check-user', async (req, res) => {
+router.post('/check-user', protect, async (req, res) => {
   try {
     const { uid, deviceId } = req.body;
 
-    // Check if user exists
-    // Convert the uid string to ObjectId if it's a valid ObjectId format, otherwise use it as is
-    let query = { uid };
-    if (mongoose.Types.ObjectId.isValid(uid)) {
-      query = { uid: new mongoose.Types.ObjectId(uid) };
-    }
-    const user = await User.findOne(query);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    if(deviceId && user.deviceId !== deviceId) {
+    if(deviceId && req.user.deviceId !== deviceId) {
       return res.status(401).json({
         success: false,
         message: 'Device ID does not match'
@@ -277,8 +252,8 @@ router.post('/check-user', async (req, res) => {
     // Return user data (excluding password)
     res.status(200).json({
       success: true,
-      ispremiumActive: user.ispremiumActive,
-      premiumExpirationDate: user.premiumExpirationDate
+      ispremiumActive: req.user.ispremiumActive,
+      premiumExpirationDate: req.user.premiumExpirationDate
     });
   } catch (error) {
     console.error('User check error:', error);
