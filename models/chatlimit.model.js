@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const ChatLimitSchema = new mongoose.Schema({
-    clientId: { type: String, required: true },
+    uid: { type: String, required: true },
     messagesSinceLastAdmin: { type: Number, default: 0 },
     photosSinceLastAdmin: { type: Number, default: 0 },
     waitingForAdminReply: { type: Boolean, default: true }

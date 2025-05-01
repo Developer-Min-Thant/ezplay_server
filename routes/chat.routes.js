@@ -9,7 +9,7 @@ router.post('/', protect, async (req, res) => {
     try {
       const user = req.user;
       const isAdmin = user.isAdmin;
-      const { uid, message, type, sender, imagePath, pricingPlan } = req.body;
+      const { uid, message, sender, imagePath, pricingPlan } = req.body;
 
       let chatLimit = await ChatLimit.findOne({ uid });
       if (!chatLimit) {
@@ -18,9 +18,9 @@ router.post('/', protect, async (req, res) => {
     
       if (!isAdmin) {
         if (chatLimit.waitingForAdminReply) {
-          if (type === "text" && chatLimit.messagesSinceLastAdmin < 5) {
+          if (imagePath == null && chatLimit.messagesSinceLastAdmin < 5) {
             chatLimit.messagesSinceLastAdmin += 1;
-          } else if (type === "photo" && chatLimit.photosSinceLastAdmin < 3) {
+          } else if (imagePath != null && chatLimit.photosSinceLastAdmin < 3) {
             chatLimit.photosSinceLastAdmin += 1;
           } else {
             return res.status(429).json({ error: "Please wait for admin to reply before sending more." });
@@ -89,7 +89,7 @@ router.get('/limit', protect, async (req, res) => {
       const chatLimit = await ChatLimit.findOne({ uid });
       res.status(200).json({
         success: true,
-        chatLimit
+        data: chatLimit
       });
     } catch (error) {
       res.status(500).json({
