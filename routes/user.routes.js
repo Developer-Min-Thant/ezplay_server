@@ -4,6 +4,7 @@ const User = require('../models/user.model');
 const { generateToken } = require('../middleware/auth');
 const axios = require('axios');
 const OtpRequest = require("../models/otpRequest.model");
+const { protect } = require('../middleware/auth');
 
 // Login route
 router.post('/login', async (req, res) => {
