@@ -42,7 +42,6 @@ router.post('/', protect, async (req, res) => {
       const chatMessage = await ChatMessage.create({
         uid,
         message,
-        type,
         sender,
         isAdmin,
         imagePath,
