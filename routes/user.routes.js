@@ -239,9 +239,11 @@ router.post('/social-login', async (req, res) => {
   }
 });
 
+
+// one device login check
 router.post('/check-user', protect, async (req, res) => {
   try {
-    const { uid, deviceId } = req.body;
+    const { deviceId } = req.body;
 
     if(deviceId && req.user.deviceId !== deviceId) {
       return res.status(401).json({

@@ -30,7 +30,7 @@ ytDlp.getVersion()
   .catch(err => console.error('Error with yt-dlp:', err));
 
 // Download MP3 route
-router.post('/', protect, checkDownloadEligibility, async (req, res) => {
+router.post('/', protect, async (req, res) => {
   const { url } = req.body;
 
   // update the user totalDownloads

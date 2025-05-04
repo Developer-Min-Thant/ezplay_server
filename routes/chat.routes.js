@@ -3,38 +3,40 @@ const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
 const ChatLimit = require('../models/chatlimit.model');
+const upload = require('../utils/upload');
+const path = require('path');
 
 // post chat message
 router.post('/', protect, async (req, res) => {
     try {
       const user = req.user;
       const isAdmin = user.isAdmin;
-      const { uid, message, sender, imagePath, pricingPlan } = req.body;
+      const { uid, isAutoReply, message, sender, imagePath, pricingPlan } = req.body;
 
       let chatLimit = await ChatLimit.findOne({ uid });
       if (!chatLimit) {
         chatLimit = await ChatLimit.create({ uid });
       }
-    
+      console.log("Chat limit:", uid);
       if (!isAdmin) {
-        if (chatLimit.waitingForAdminReply) {
-          if (imagePath == null && chatLimit.messagesSinceLastAdmin < 5) {
-            chatLimit.messagesSinceLastAdmin += 1;
-          } else if (imagePath != null && chatLimit.photosSinceLastAdmin < 3) {
-            chatLimit.photosSinceLastAdmin += 1;
-          } else {
-            return res.status(429).json({ error: "Please wait for admin to reply before sending more." });
-          }
+        chatLimit.messageCount += 1;
+        if(imagePath){
+          chatLimit.photoCount += 1;
+        }
+
+        if(chatLimit.messageCount > 5 || chatLimit.photoCount > 3){
+          return res.status(429).json({ success: false, message: "Please wait for admin to reply before sending more." });
         }
       }
+
+
+      console.log("Chat limit:", chatLimit);
+      
     
       // If admin sends a message, reset limits
       if (isAdmin) {
-        chatLimit.messagesSinceLastAdmin = 0;
-        chatLimit.photosSinceLastAdmin = 0;
-        chatLimit.waitingForAdminReply = false;
-      } else {
-        chatLimit.waitingForAdminReply = true;
+        chatLimit.messageCount = 0;
+        chatLimit.photoCount = 0;
       }
     
       await chatLimit.save();
@@ -43,7 +45,7 @@ router.post('/', protect, async (req, res) => {
         uid,
         message,
         sender,
-        isAdmin,
+        isAdmin: isAutoReply || isAdmin,
         imagePath,
         pricingPlan
       });
@@ -97,6 +99,84 @@ router.get('/limit', protect, async (req, res) => {
         error: error.message
       });
     }
+});
+
+router.get('/limits', async (req, res) => {
+  try {
+    const chatLimit = await ChatLimit.find().sort({ createdAt: -1 }).limit(50);
+    res.status(200).json({
+      success: true,
+      data: chatLimit
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error during chat limit retrieval',
+      error: error.message
+    });
+  }
+});
+
+// Upload chat image
+router.post('/upload', protect, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No image file provided'
+      });
+    }
+
+    // Create the image URL path
+    const imagePath = `/images/${req.file.filename}`;
+
+    res.status(200).json({
+      success: true,
+      imagePath
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error during image upload',
+      error: error.message
+    });
+  }
+});
+
+// Delete chat history
+router.delete('/', protect, async (req, res) => {
+  try {
+    const uid = req.query.uid;
+    
+    if (!uid) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID (uid) is required'
+      });
+    }
+
+    // Delete all chat messages for this user
+    await ChatMessage.deleteMany({ uid });
+    
+    // Reset chat limits
+    const chatLimit = await ChatLimit.findOne({ uid });
+    if (chatLimit) {
+      chatLimit.messageCount = 0;
+      chatLimit.photoCount = 0;
+      await chatLimit.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Chat history deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server error during chat history deletion',
+      error: error.message
+    });
+  }
 });
 
 module.exports = router;
