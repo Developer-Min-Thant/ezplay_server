@@ -34,8 +34,8 @@ router.post('/', protect, async (req, res) => {
   const { url } = req.body;
 
   // update the user totalDownloads
-  req.user.totalDownloads += 1;
-  await req.user.save();
+  // req.user.totalDownloads += 1;
+  // await req.user.save();
 
   if (!url) {
     return res.status(400).json({ error: 'URL is required' });
