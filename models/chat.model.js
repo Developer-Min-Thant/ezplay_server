@@ -7,7 +7,7 @@ const chatMessageSchema = new mongoose.Schema({
     required: true,
     index: true,
   },
-  sender: {
+  name: {
     type: String,
     required: true,
   },
@@ -15,15 +15,11 @@ const chatMessageSchema = new mongoose.Schema({
     type: String,
     required: false,
   },
-  isAdmin: {
-    type: Boolean,
+  senderId: {
+    type: Number, // 1 is admin, 2 is user, 3 is system
     required: true,
   },
   imagePath: {
-    type: String,
-    required: false,
-  },
-  pricingPlan: {
     type: String,
     required: false,
   },

@@ -8,8 +8,8 @@ const { generateToken } = require('../middleware/auth');
 router.post('/login', async (req, res) => {
     try {
         const { name, password } = req.body;
-        const admin = await Admin.findOne({ name });
-        console.log("Admin login:", admin);
+        const admin = await Admin.findOne({ name }).select('+password');
+
         
         if (!admin) {
             return res.status(401).json({
@@ -24,10 +24,10 @@ router.post('/login', async (req, res) => {
                 message: 'Invalid credentials'
             });
         }
-        const token = generateToken(admin.uid, 'admin');
+        const token = generateToken(admin._id, 'admin', false);
         res.status(200).json({
             success: true,
-            uid: admin.uid,
+            uid: admin._id,
             name: admin.name,
             token,
         });
