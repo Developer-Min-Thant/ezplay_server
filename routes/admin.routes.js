@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const Admin = require('../models/admin.model');
 const { generateToken } = require('../middleware/auth');
+const User = require('../models/user.model');
 
 // admin login
 router.post('/login', async (req, res) => {
@@ -36,6 +37,60 @@ router.post('/login', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Server error during admin login',
+            error: error.message
+        });
+    }
+});
+
+// update user premium status
+router.post('/update-user-premium', async (req, res) => {
+    try {
+        const { uid, premiumExpirationDate } = req.body;
+        const user = await User.findOne({ uid });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+        user.ispremiumActive = true;
+        user.premiumExpirationDate = premiumExpirationDate;
+        await user.save();
+        res.status(200).json({
+            success: true,
+            message: 'User premium status updated successfully'
+        });
+    } catch (error) {
+        console.error('Error updating user premium status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during user premium status update',
+            error: error.message
+        });
+    }
+});
+
+// find user with uid
+router.get('/find-user', async (req, res) => {
+    try {
+        const uid = req.query.uid;
+        const user = await User.findOne({ uid });
+        console.log("User found:", user);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+        res.status(200).json({
+            success: true,
+            user
+        });
+    } catch (error) {
+        console.error('Error finding user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during user finding',
             error: error.message
         });
     }

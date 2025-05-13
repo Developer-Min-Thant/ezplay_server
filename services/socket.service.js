@@ -4,6 +4,7 @@
 const ChatMessage = require('../models/chat.model');
 const ChatLimit = require('../models/chatlimit.model');
 const jwt = require('jsonwebtoken');
+const User = require('../models/user.model');
 
 // Socket event constants
 const EVENTS = {
@@ -19,6 +20,7 @@ const EVENTS = {
   JOIN: 'join',
   READ_MESSAGE: 'read message',
   DISCONNECT: 'disconnect',
+  USER_INFO: 'user info',
 };
 class SocketService {
   constructor(io) {
@@ -69,6 +71,9 @@ class SocketService {
       
       // Send previous messages
       this.sendPreviousMessages(socket, uid);
+
+      // Send the current user status
+      this.sendUserInfo(socket, uid);
     });
     
     // Handle chat messages
@@ -105,12 +110,32 @@ class SocketService {
     try {
       const chatMessages = await ChatMessage.find({ uid })
         .sort({ createdAt: -1 })
-        .limit(50);
+        .limit(30);
       
       if (chatMessages.length > 0) {
         socket.emit(EVENTS.PREVIOUS_MESSAGES, chatMessages.reverse());
       } else {
         socket.emit(EVENTS.PREVIOUS_MESSAGES, []);
+      }
+
+    } catch (error) {
+      console.error('Error fetching previous messages:', error);
+    }
+  }
+
+  /**
+   * Send user status to all connected users
+   * @param {Object} socket - Socket.IO socket object
+   * @param {String} uid - User ID / room name
+   */
+  async sendUserInfo(socket, uid) {
+    try {
+      const user = await User.findOne({ uid });
+      
+      if (user) {
+        socket.emit(EVENTS.USER_INFO, user);
+      } else {
+        socket.emit(EVENTS.USER_INFO, null);
       }
 
     } catch (error) {
