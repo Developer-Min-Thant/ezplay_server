@@ -9,6 +9,7 @@ const mongoose = require('mongoose');
 const http = require('http');
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
+const { createAdapter } = require('@socket.io/mongo-adapter');
 const User = require('./models/user.model');
 const ChatMessage = require('./models/chat.model');
 const ChatLimit = require('./models/chatlimit.model');
@@ -75,8 +76,34 @@ setInterval(() => {
 }, 30 * 60 * 1000); // Run every 30 minutes
 
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
+  .then(async () => {
     console.log('Connected to MongoDB');
+    
+    // Set up Socket.IO MongoDB adapter for cross-server messaging
+    const adapterCollection = process.env.ADAPTER_COLLECTION;
+    if (adapterCollection) {
+      try {
+        const db = mongoose.connection.db;
+        // Create capped collection for the adapter if it doesn't exist
+        try {
+          await db.createCollection(adapterCollection, {
+            capped: true,
+            size: 1e6
+          });
+          console.log(`Created capped collection: ${adapterCollection}`);
+        } catch (error) {
+          console.log(`Collection already exists: ${adapterCollection}`);
+        }
+
+        // Set up the MongoDB adapter
+        const mongoCollection = db.collection(adapterCollection);
+        io.adapter(createAdapter(mongoCollection));
+        console.log('Socket.IO MongoDB adapter configured successfully');
+      } catch (error) {
+        console.error('Error configuring Socket.IO MongoDB adapter:', error);
+      }
+    }
+    
     // Initialize Socket.IO service
     const socketService = new SocketService(io);
     socketService.initialize();
