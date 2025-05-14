@@ -220,7 +220,7 @@ router.post('/social-login', async (req, res) => {
 
     // (Later)Todo:: need to check if token is valid here 
     // check with supabase auth secret or use the same secret
-    const googleAppleSub = JSON.parse(atob(token.split('.')[1]));
+    const googleAppleSub = JSON.parse(atob(token.split('.')[1])).sub;
 
     console.log("googleAppleSub", googleAppleSub);
     
