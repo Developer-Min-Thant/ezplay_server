@@ -209,8 +209,8 @@ router.post('/social-login', async (req, res) => {
 
     // (Later)Todo:: need to check if token is valid here 
     // check with supabase auth secret or use the same secret
-    const decoded = jwtDecode(token);
-    console.log(decoded.sub);
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    console.log(payload.sub);
 
 
     // Check if user exists
