@@ -1,10 +1,10 @@
 // admin routes
 const express = require('express');
-const router = express.Router();
 const Admin = require('../models/admin.model');
-const { generateToken } = require('../middleware/auth');
 const User = require('../models/user.model');
 const Log = require('../models/log.model');
+const router = express.Router();
+const { generateToken } = require('../middleware/auth');
 
 // admin login
 router.post('/login', async (req, res) => {
@@ -44,7 +44,7 @@ router.post('/login', async (req, res) => {
 });
 
 // update user premium status
-router.post('/update-user-premium', async (req, res) => {
+router.post('/update-user-premium', protect, async (req, res) => {
     try {
         const { uid, premiumExpirationDate, premiumDuration } = req.body;
         const user = await User.findOne({ uid });

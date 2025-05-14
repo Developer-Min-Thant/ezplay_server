@@ -22,6 +22,7 @@ const EVENTS = {
   DISCONNECT: 'disconnect',
   USER_INFO: 'user info',
 };
+
 class SocketService {
   constructor(io) {
     this.io = io;
@@ -54,7 +55,6 @@ class SocketService {
 
     this.io.on('connection', (socket) => {
       console.log(`User connected: ${socket.id} ${socket.user.uid}`);
-    
       this.setupEventListeners(socket);
     });
   }
@@ -189,18 +189,6 @@ class SocketService {
     return chatMessage;
   }
 
-  /**
-   * Send a direct message to a specific user
-   * @param {String} userId - User ID
-   * @param {String} event - Event name
-   * @param {Object} data - Message data
-   */
-  sendToUser(userId, event, data) {
-    const socketId = this.getUserSocketId(userId);
-    if (socketId) {
-      this.io.to(socketId).emit(event, data);
-    }
-  }
 }
 
 module.exports = SocketService;

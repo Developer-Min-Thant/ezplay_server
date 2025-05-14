@@ -30,18 +30,12 @@ ytDlp.getVersion()
   .catch(err => console.error('Error with yt-dlp:', err));
 
 // Download MP3 route
-router.post('/', protect, async (req, res) => {
+router.post('/', checkDownloadEligibility, async (req, res) => {
   const { url } = req.body;
-
-  // update the user totalDownloads
-  // req.user.totalDownloads += 1;
-  // await req.user.save();
 
   if (!url) {
     return res.status(400).json({ error: 'URL is required' });
   }
-
-  console.log('Received download request for URL:', url);
 
   // More permissive YouTube URL validation
   if (!youtubeRegex.test(url)) {

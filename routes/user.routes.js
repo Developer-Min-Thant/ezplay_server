@@ -5,6 +5,35 @@ const { generateToken } = require('../middleware/auth');
 const axios = require('axios');
 const OtpRequest = require("../models/otpRequest.model");
 const { protect } = require('../middleware/auth');
+const Counter = require('./counter.model');
+
+// one device login check
+router.post('/check-user', protect, async (req, res) => {
+  try {
+    const { deviceId } = req.body;
+
+    if(deviceId && req.user.deviceId !== deviceId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Device ID does not match'
+      });
+    }
+
+    // Return user data (excluding password)
+    res.status(200).json({
+      success: true,
+      ispremiumActive: req.user.ispremiumActive,
+      premiumExpirationDate: req.user.premiumExpirationDate
+    });
+  } catch (error) {
+    console.error('User check error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during user check',
+      error: error.message
+    });
+  }
+});
 
 // Login route
 router.post('/login', async (req, res) => {
@@ -140,7 +169,9 @@ router.post('/verify-otp', async (req, res) => {
     }
 
     // First create the user without uid
+    const uid = await getNextUserId();
     const user = await User.create({
+      uid,
       name,
       phone,
       deviceId,
@@ -148,8 +179,6 @@ router.post('/verify-otp', async (req, res) => {
       ispremiumActive: false
     });
     
-    // Update the user with its own _id as the uid
-    user.uid = user._id.toString();
     await user.save();
     const token = generateToken(user.uid, 'user', user.ispremiumActive);
 
@@ -190,16 +219,16 @@ router.post('/social-login', async (req, res) => {
     if (!user) {
       // create one 
       // First create the user without uid
+      const uid = await getNextUserId();
+
       const user = await User.create({
+        uid,
         name,
         deviceId,
         ispremiumActive: false,
         provider
       });
-      
-      // Update the user with its own _id as the uid
-      user.uid = user._id.toString();
-      await user.save();
+            await user.save();
       const authToken = generateToken(user.uid, 'user', user.ispremiumActive);
 
       res.status(201).json({
@@ -240,33 +269,13 @@ router.post('/social-login', async (req, res) => {
 });
 
 
-// one device login check
-router.post('/check-user', protect, async (req, res) => {
-  try {
-    const { deviceId } = req.body;
 
-    if(deviceId && req.user.deviceId !== deviceId) {
-      return res.status(401).json({
-        success: false,
-        message: 'Device ID does not match'
-      });
-    }
-
-    // Return user data (excluding password)
-    res.status(200).json({
-      success: true,
-      ispremiumActive: req.user.ispremiumActive,
-      premiumExpirationDate: req.user.premiumExpirationDate
-    });
-  } catch (error) {
-    console.error('User check error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error during user check',
-      error: error.message
-    });
-  }
-});
-
-
+async function getNextUserId() {
+  const counter = await Counter.findByIdAndUpdate(
+    'uid',
+    { $inc: { sequence_value: 1 } },
+    { new: true, upsert: true }
+  );
+  return counter.sequence_value;
+}
 module.exports = router;

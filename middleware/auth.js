@@ -65,16 +65,27 @@ exports.checkDownloadEligibility = async (req, res, next) => {
       });
     }
 
+    if(user.deviceId !== req.deviceId){
+      return res.status(403).json({
+        success: false,
+        message: 'Device ID mismatch'
+      });
+    }
+
     if(!user.ispremiumActive || user.totalDownloads >= 10) {
       return res.status(401).json({
         success: false,
         message: 'User is not premium or has exceeded download limit'
       });
     }
+
+    user.totalDownloads += 1;
+    await user.save();
     
     // Attach user to request object
     req.user = { isAdmin: decoded.isAdmin, uid: decoded.uid, ispremiumActive: user.ispremiumActive, 
       totalDownloads: user.totalDownloads };
+
     next();
   } catch (error) {
     return res.status(401).json({
