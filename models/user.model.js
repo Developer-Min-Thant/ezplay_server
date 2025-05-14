@@ -14,6 +14,7 @@ const userSchema = new mongoose.Schema({
   phone: {
     type: String,
     trim: true,
+    unique: true,
   },
   password: {
     type: String,
@@ -22,8 +23,8 @@ const userSchema = new mongoose.Schema({
   },
   provider: {
     type: String,
-    enum: ['local', 'google', 'apple'],
-    default: 'local'
+    enum: ['phone', 'google', 'apple'],
+    default: 'phone'
   },
   totalDownloads: {
     type: Number,

@@ -168,30 +168,41 @@ router.post('/verify-otp', async (req, res) => {
       });
     }
 
-    // First create the user without uid
-    const uid = await getNextUserId();
-    const user = await User.create({
-      uid,
-      name,
-      phone,
-      deviceId,
-      password,
-      ispremiumActive: false
-    });
-    
-    await user.save();
-    const token = generateToken(user.uid, 'user', user.ispremiumActive);
 
-    // Return user data (excluding password) and token
-    res.status(201).json({
-      success: true,
-      name: user.name,
-      uid: user.uid,
-      token,
-      ispremiumActive: user.ispremiumActive, // only for show 
-      premiumExpirationDate: user.premiumExpirationDate // only for show 
-    });
-
+    const user = await User.findOne({ phone });
+    if(!user) {
+      const uid = await getNextUserId();
+      const user = await User.create({
+        uid,
+        name,
+        phone,
+        deviceId,
+        password,
+        ispremiumActive: false,
+      });
+      const token = generateToken(user.uid, 'user', user.ispremiumActive);
+      // Return user data (excluding password) and token
+      res.status(201).json({
+        success: true,
+        name: user.name,
+        uid: user.uid,
+        token,
+        ispremiumActive: user.ispremiumActive, // only for show 
+        premiumExpirationDate: user.premiumExpirationDate // only for show 
+      });
+    } else {
+      user.deviceId = deviceId;
+      await user.save();
+      const token = generateToken(user.uid, 'user', user.ispremiumActive);
+      return res.status(200).json({
+        success: true,
+        uid: user.uid,
+        name: user.name,
+        token,
+        ispremiumActive: user.ispremiumActive, // only for show 
+        premiumExpirationDate: user.premiumExpirationDate // only for show 
+      });
+    }
   } catch (error) {
     console.error('OTP verification error:', error);
     res.status(500).json({
@@ -205,30 +216,27 @@ router.post('/verify-otp', async (req, res) => {
 // sign up with social
 router.post('/social-login', async (req, res) => {
   try {
-    const { uid, name, deviceId, provider, token } = req.body;
+    const { name, deviceId, provider, token } = req.body;
 
     // (Later)Todo:: need to check if token is valid here 
     // check with supabase auth secret or use the same secret
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    console.log(payload.sub);
-
+    const googleAppleSub = JSON.parse(atob(token.split('.')[1]));
 
     // Check if user exists
-    const user = await User.findOne({ uid });    
+    const user = await User.findOne({ phone: googleAppleSub });    
 
     if (!user) {
       // create one 
       // First create the user without uid
       const uid = await getNextUserId();
-
       const user = await User.create({
         uid,
         name,
+        phone: googleAppleSub,
         deviceId,
         ispremiumActive: false,
-        provider
+        provider,
       });
-      await user.save();
       const authToken = generateToken(user.uid, 'user', user.ispremiumActive);
 
       res.status(201).json({
