@@ -207,11 +207,11 @@ router.post('/social-login', async (req, res) => {
   try {
     const { uid, name, deviceId, provider, token } = req.body;
 
-    console.log('Social login request:', { uid, name, deviceId, provider, token });
-
-
     // (Later)Todo:: need to check if token is valid here 
     // check with supabase auth secret or use the same secret
+    const decoded = jwtDecode(token);
+    console.log(decoded.sub);
+
 
     // Check if user exists
     const user = await User.findOne({ uid });    
@@ -228,7 +228,7 @@ router.post('/social-login', async (req, res) => {
         ispremiumActive: false,
         provider
       });
-            await user.save();
+      await user.save();
       const authToken = generateToken(user.uid, 'user', user.ispremiumActive);
 
       res.status(201).json({
