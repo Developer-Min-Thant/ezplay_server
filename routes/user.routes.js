@@ -222,6 +222,9 @@ router.post('/social-login', async (req, res) => {
     // check with supabase auth secret or use the same secret
     const googleAppleSub = JSON.parse(atob(token.split('.')[1]));
 
+    console.log("googleAppleSub", googleAppleSub);
+    
+
     // Check if user exists
     const user = await User.findOne({ phone: googleAppleSub });    
 
