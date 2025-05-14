@@ -5,6 +5,7 @@ const User = require('../models/user.model');
 const Log = require('../models/log.model');
 const router = express.Router();
 const { generateToken } = require('../middleware/auth');
+const { protect } = require('../middleware/auth');
 
 // admin login
 router.post('/login', async (req, res) => {

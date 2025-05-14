@@ -5,7 +5,7 @@ const { generateToken } = require('../middleware/auth');
 const axios = require('axios');
 const OtpRequest = require("../models/otpRequest.model");
 const { protect } = require('../middleware/auth');
-const Counter = require('./counter.model');
+const Counter = require('../models/counter.model');
 
 // one device login check
 router.post('/check-user', protect, async (req, res) => {
