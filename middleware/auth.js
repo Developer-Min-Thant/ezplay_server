@@ -72,22 +72,21 @@ exports.checkDownloadEligibility = async (req, res, next) => {
       });
     }
 
-    if(user.totalDownloads >= 10) {
-      if(!user.ispremiumActive){
+
+    if(!user.ispremiumActive) {
+      if(user.totalDownloads >= 10){
         return res.status(401).json({
           success: false,
           message: 'User is not premium or has exceeded download limit'
         });
-      } else {
-        user.totalDownloads += 1;
-        await user.save();
-        req.user = { isAdmin: decoded.isAdmin, uid: decoded.uid, ispremiumActive: user.ispremiumActive, 
-          totalDownloads: user.totalDownloads };
-        next();
       }
     }
-    
 
+    user.totalDownloads += 1;
+    await user.save();
+    req.user = { isAdmin: decoded.isAdmin, uid: decoded.uid, ispremiumActive: user.ispremiumActive, 
+      totalDownloads: user.totalDownloads };
+    next();
   } catch (error) {
     return res.status(401).json({
       success: false,
