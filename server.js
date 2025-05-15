@@ -14,6 +14,7 @@ const User = require('./models/user.model');
 const ChatMessage = require('./models/chat.model');
 const ChatLimit = require('./models/chatlimit.model');
 const SocketService = require('./services/socket.service');
+const { initSupabaseCron } = require('./utils/supabaseCron');
 
 // Import routes
 const routes = require('./routes/index');
@@ -108,6 +109,9 @@ mongoose.connect(process.env.MONGO_URI)
     // Initialize Socket.IO service
     const socketService = new SocketService(io);
     socketService.initialize();
+    
+    // Initialize Supabase cron job
+    initSupabaseCron();
 
     // Start server
     const PORT = process.env.PORT || 3000;

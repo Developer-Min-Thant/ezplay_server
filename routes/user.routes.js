@@ -7,7 +7,7 @@ const OtpRequest = require("../models/otpRequest.model");
 const { protect } = require('../middleware/auth');
 const Counter = require('../models/counter.model');
 
-// one device login check
+// to check user is premium or not
 router.post('/check-user', protect, async (req, res) => {
   try {
     const { deviceId } = req.body;
