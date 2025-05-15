@@ -56,6 +56,7 @@ exports.checkDownloadEligibility = async (req, res, next) => {
     }
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
     // find user
     const user = await User.findOne({ uid: decoded.uid });
     if (!user) {
@@ -64,8 +65,7 @@ exports.checkDownloadEligibility = async (req, res, next) => {
         message: 'User not found'
       });
     }
-
-    if(user.deviceId !== req.deviceId){
+    if(user.deviceId !== req.body.deviceId){
       return res.status(403).json({
         success: false,
         message: 'Device ID mismatch'
