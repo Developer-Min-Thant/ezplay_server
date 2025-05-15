@@ -57,7 +57,7 @@ exports.checkDownloadEligibility = async (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     // find user
-    const user = await User.findById(decoded.uid);
+    const user = await User.findOne({ uid: decoded.uid });
     if (!user) {
       return res.status(401).json({
         success: false,
