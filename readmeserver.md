@@ -39,33 +39,7 @@ node -v
 npm -v
 ```
 
-## Step 3: Install MongoDB
-
-```bash
-# Import MongoDB public GPG key
-curl -fsSL https://pgp.mongodb.com/server-6.0.asc | \
-   sudo gpg -o /usr/share/keyrings/mongodb-server-6.0.gpg \
-   --dearmor
-
-# Create list file for MongoDB
-echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | \
-   sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
-
-# Update package database
-sudo apt update
-
-# Install MongoDB
-sudo apt install -y mongodb-org
-
-# Start and enable MongoDB service
-sudo systemctl start mongod
-sudo systemctl enable mongod
-
-# Verify MongoDB is running
-sudo systemctl status mongod
-```
-
-## Step 4: Install yt-dlp and ffmpeg
+## Step 3: Install yt-dlp and ffmpeg
 
 ```bash
 # Install ffmpeg
@@ -80,7 +54,7 @@ ffmpeg -version
 yt-dlp --version
 ```
 
-## Step 5: Clone and Configure the Application
+## Step 4: Clone and Configure the Application
 
 ```bash
 # Install Git if not already installed
@@ -97,7 +71,7 @@ npm install
 mkdir -p downloads
 ```
 
-## Step 6: Update the Application Configuration
+## Step 5: Update the Application Configuration
 
 Edit the `routes/download.routes.js` file to specify the correct path to ffmpeg:
 
@@ -114,7 +88,7 @@ Find the lines with `--ffmpeg-location` and update them to:
 also yt-dlp
 <!-- const ytDlp= new YTDlpWrap("/usr/local/bin/yt-dlp"); -->
 
-## Step 7: Set Up Environment Variables
+## Step 6: Set Up Environment Variables
 
 Create a `.env` file for environment variables:
 
@@ -129,7 +103,7 @@ PORT=3000
 MONGODB_URI=mongodb://localhost:27017/youtube-downloader
 ```
 
-## Step 8: Test the Application
+## Step 7: Test the Application
 
 ```bash
 # Start the application
@@ -143,7 +117,7 @@ Connected to MongoDB
 Server running on port 3000
 ```
 
-## Step 9: Set Up PM2 for Production Deployment
+## Step 8: Set Up PM2 for Production Deployment
 
 PM2 is a process manager for Node.js applications that helps keep your app running.
 
@@ -162,7 +136,7 @@ pm2 startup
 pm2 save
 ```
 
-## Step 10: Set Up Nginx as a Reverse Proxy (Optional but Recommended)
+## Step 9: Set Up Nginx as a Reverse Proxy (Optional but Recommended)
 
 ```bash
 # Install Nginx
@@ -208,7 +182,7 @@ sudo nginx -t  # Test the configuration
 sudo systemctl restart nginx
 ```
 
-## Step 11: Set Up SSL with Let's Encrypt (Optional but Recommended)
+## Step 10: Set Up SSL with Let's Encrypt (Optional but Recommended)
 
 ```bash
 # Install Certbot
@@ -220,7 +194,7 @@ sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
 # Follow the prompts to complete the setup
 ```
 
-## Step 12: Set Up Firewall (Optional but Recommended)
+## Step 11: Set Up Firewall (Optional but Recommended)
 
 ```bash
 # Allow SSH, HTTP, and HTTPS
@@ -286,7 +260,3 @@ pm2 restart youtube-mp3-downloader
 2. **User Authentication**: For public servers, consider adding user authentication.
 3. **Regular Updates**: Keep all system packages, Node.js, and yt-dlp updated.
 4. **Monitoring**: Set up monitoring for your server to detect issues early.
-
-## Legal Considerations
-
-Be aware that downloading content from YouTube may violate their Terms of Service in some cases. This tool should only be used for downloading content that you have the right to download, such as content under Creative Commons licenses or your own content.

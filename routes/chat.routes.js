@@ -103,7 +103,11 @@ router.get('/limit', protect, async (req, res) => {
 
 router.get('/limits', async (req, res) => {
   try {
-    const chatLimit = await ChatLimit.find().sort({ createdAt: -1 }).limit(50);
+    let chatLimit = await ChatLimit.find({ hasNewMessage: true }).sort({ createdAt: -1 }).limit(50);
+    if(chatLimit.length < 50){
+      const chatLimit2 = await ChatLimit.find({ hasNewMessage: false }).sort({ createdAt: -1 }).limit(50 - chatLimit.length);
+      chatLimit = [...chatLimit, ...chatLimit2];
+    }
     res.status(200).json({
       success: true,
       data: chatLimit

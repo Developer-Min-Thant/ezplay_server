@@ -160,6 +160,7 @@ class SocketService {
     
     if (!isAdmin) {
       chatLimit.messageCount += 1;
+      chatLimit.hasNewMessage = true;
       if (chatLimit.messageCount > 5) {
         socket.emit(EVENTS.ERROR, { 
           message: "Please wait for admin to reply before sending more." 
@@ -171,6 +172,7 @@ class SocketService {
     // If admin sends a message, reset limits
     if (isAdmin) {
       chatLimit.messageCount = 0;
+      chatLimit.hasNewMessage = false;
     }
     
     await chatLimit.save();

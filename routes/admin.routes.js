@@ -79,6 +79,26 @@ router.post('/update-user-premium', protect, async (req, res) => {
     }
 });
 
+
+router.get('/user', protect, async (req, res) => {
+    try {
+        const { uid } = req.query;
+        const user = await User.findOne({ uid });
+        res.status(200).json({
+            success: true,
+            user
+        });
+    } catch (error) {
+        console.error('Error getting user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during user retrieval',
+            error: error.message
+        });
+    }
+});
+
+// 
 // admin register
 // router.get('/register', async (req, res) => {
 //     try {
