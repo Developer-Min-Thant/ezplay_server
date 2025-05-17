@@ -10,6 +10,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const jwt = require('jsonwebtoken');
 const { createAdapter } = require('@socket.io/mongo-adapter');
+const rateLimit = require('express-rate-limit');
 const User = require('./models/user.model');
 const ChatMessage = require('./models/chat.model');
 const ChatLimit = require('./models/chatlimit.model');
@@ -34,6 +35,39 @@ const io = socketIo(server, {
   }
 });
 
+// Rate limiting middleware
+const defaultLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  message: { success: false, message: 'Too many requests, please try again later.' }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20, // Limit each IP to 20 login/register attempts per hour
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many authentication attempts, please try again later.' }
+});
+
+const downloadLimiter = rateLimit({
+  windowMs: 30 * 60 * 1000, // 30 minutes
+  max: 30, // Limit each IP to 20 download requests per 30 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many download requests, please try again later.' }
+});
+
+const chatLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 50, // Limit each IP to 50 chat requests per 5 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many chat requests, please try again later.' }
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -52,6 +86,15 @@ const imagesDir = path.join('/var/www/ezplay_server', 'images');
 if (!fs.existsSync(imagesDir)) {
   fs.mkdirSync(imagesDir, { recursive: true });
 }
+
+// Apply rate limiters to specific routes
+app.use('/api/user', authLimiter); // Auth routes
+app.use('/api/admin', authLimiter); // Admin auth routes
+app.use('/api/download', downloadLimiter); // Download routes
+app.use('/api/chat', chatLimiter); // Chat routes
+
+// Apply default rate limiter to all routes
+app.use(defaultLimiter);
 
 // Setup API routes
 app.use('/api', routes);
