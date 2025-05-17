@@ -10,7 +10,7 @@ const User = require('../models/user.model');
 const { protect, checkDownloadEligibility } = require('../middleware/auth');
 
 // Get downloads directory path
-const downloadsDir = path.join(__dirname, '..', 'downloads');
+const downloadsDir = path.join('/var/www/ezplay_server', 'downloads');
 
 // Ensure downloads directory exists
 if (!fs.existsSync(downloadsDir)) {

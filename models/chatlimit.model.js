@@ -5,7 +5,7 @@ const ChatLimitSchema = new mongoose.Schema({
     name: { type: String, required: true },
     messageCount: { type: Number, default: 0 },
     hasNewMessage: { type: Boolean, default: true },
-    // createdAt: { type: Date, default: Date.now, expires: 86400 } // 86400 seconds = 24 hours
+    modifiedAt: { type: Date, default: Date.now },
 });
   
 module.exports = mongoose.model("ChatLimit", ChatLimitSchema);

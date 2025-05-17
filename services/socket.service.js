@@ -158,6 +158,7 @@ class SocketService {
       chatLimit = await ChatLimit.create({ uid, name });
     }
     
+    chatLimit.modifiedAt = Date.now();
     if (!isAdmin) {
       chatLimit.messageCount += 1;
       chatLimit.hasNewMessage = true;
