@@ -1,13 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const YTDlpWrap = require('yt-dlp-wrap').default;
-const ffmpeg = require('fluent-ffmpeg');
-const { v4: uuidv4 } = require('uuid');
-const fs = require('fs');
 const path = require('path');
+const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
+const YTDlpWrap = require('yt-dlp-wrap').default;
 const NodeID3 = require('node-id3');
-const User = require('../models/user.model');
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('ffmpeg-static');
 const { protect, checkDownloadEligibility } = require('../middleware/auth');
+const { incrementActiveDownloads, decrementActiveDownloads, canAcceptDownload, getActiveDownloads, MAX_CONCURRENT_DOWNLOADS } = require('../services/concurrency.service');
 
 // Get downloads directory path
 const downloadsDir = path.join('/var/www/ezplay_server', 'downloads');
@@ -28,6 +29,15 @@ const ytDlp= new YTDlpWrap("/usr/local/bin/yt-dlp");
 ytDlp.getVersion()
   .then(version => console.log('yt-dlp version:', version))
   .catch(err => console.error('Error with yt-dlp:', err));
+
+// Get active downloads status route
+router.get('/active-downloads', protect, (req, res) => {
+  res.status(200).json({
+    success: true,
+    activeDownloads: getActiveDownloads(),
+    maxConcurrent: MAX_CONCURRENT_DOWNLOADS
+  });
+});
 
 // Download MP3 route
 router.post('/', checkDownloadEligibility, async (req, res) => {
@@ -52,107 +62,127 @@ router.post('/', checkDownloadEligibility, async (req, res) => {
       res.status(status).json(data);
     }
   };
+  
+  // Check if server can accept more downloads
+  if (!canAcceptDownload()) {
+    return res.status(429).json({
+      success: false,
+      message: 'Server is currently busy processing other downloads. Please try again later.',
+      activeDownloads: getActiveDownloads(),
+      maxConcurrent: MAX_CONCURRENT_DOWNLOADS
+    });
+  }
+  
+  // Increment active downloads counter
+  incrementActiveDownloads();
 
   try {
     const id = uuidv4();
     const tempMp3Path = path.join(downloadsDir, `${id}_temp.mp3`);
     const finalMp3Path = path.join(downloadsDir, `${id}.mp3`);
     
-    // Get video info using yt-dlp
+    // First, get video metadata outside the queue
+    console.log('Getting video info with yt-dlp...');
+    const videoInfoArgs = [
+      '--dump-json',
+      '--no-playlist',
+      url
+    ];
+    
+    const videoInfoResult = await ytDlp.execPromise(videoInfoArgs);
+    const videoInfo = JSON.parse(videoInfoResult);
+    
+    // Sanitize title for filename
+    const title = (videoInfo.title || 'unknown');
+    
+    console.log(`Found video: ${videoInfo.title}`);
+    
+    // Send initial response to client that download is starting
+    res.status(200).json({
+      success: true,
+      message: 'Download is starting',
+      title: title,
+      id: id,
+      downloadUrl: `/downloads/${id}.mp3`,
+      fileName: `${title}.mp3`
+    });
+    
+    // Set response as sent since we've already responded to the client
+    responseSent = true;
+    
+    // Process download (not in a queue)
     try {
-      console.log('Getting video info with yt-dlp...');
-      
-      // First, get video metadata
-      const videoInfoArgs = [
-        '--dump-json',
-        '--no-playlist',
-        url
-      ];
-      
-      const videoInfoResult = await ytDlp.execPromise(videoInfoArgs);
-      const videoInfo = JSON.parse(videoInfoResult);
-      
-      // Sanitize title for filename
-      const title = (videoInfo.title || 'unknown');
-      
-      console.log(`Found video: ${videoInfo.title}`);
-      
-
-      // '--ffmpeg-location', '/opt/homebrew/bin/ffmpeg', //for my local mac
-
-      // Download audio with yt-dlp directly to MP3
-      const downloadArgs = [
-        '--extract-audio',
-        '--audio-format', 'mp3',
-        '--audio-quality', '0', // Best quality
-        '--output', tempMp3Path,
-        '--no-playlist',
-        '--no-warnings',
-        '--ffmpeg-location', '/usr/bin/ffmpeg',
-        url
-      ];
-      
-      console.log('Starting download with yt-dlp...');
-      
-      // Execute yt-dlp to download and convert to MP3
-      await ytDlp.execPromise(downloadArgs);
-      
-      console.log('Download completed, adding ID3 tags...');
-      
-      // Add ID3 tags
       try {
-        const tags = {
-          title: videoInfo.title || 'Unknown',
-          artist: videoInfo.uploader || 'Unknown',
-          album: 'YouTube',
-          year: new Date().getFullYear().toString(),
-        };
+        // '--ffmpeg-location', '/opt/homebrew/bin/ffmpeg', //for my local mac
+
+        // Download audio with yt-dlp directly to MP3
+        const downloadArgs = [
+          '--extract-audio',
+          '--audio-format', 'mp3',
+          '--audio-quality', '0', // Best quality
+          '--output', tempMp3Path,
+          '--no-playlist',
+          '--no-warnings',
+          '--ffmpeg-location', '/usr/bin/ffmpeg',
+          url
+        ];
         
-        // Rename the file to final path
-        fs.renameSync(tempMp3Path, finalMp3Path);
+        console.log(`Starting download with yt-dlp for ${id}...`);
         
-        // Write ID3 tags
-        NodeID3.write(tags, finalMp3Path);
+        // Execute yt-dlp to download and convert to MP3
+        await ytDlp.execPromise(downloadArgs);
+      
+        console.log(`Download completed for ${id}, adding ID3 tags...`);
         
-        console.log(`Downloaded and converted: ${title}`);
-        
-        // Send success response
-        sendResponse(200, {
-          success: true,
-          title: title,
-          downloadUrl: `/downloads/${id}.mp3`,
-          fileName: `${title}.mp3`,
-        });
-      } catch (tagError) {
-        console.error('Error adding ID3 tags:', tagError);
-        // Continue even if tagging fails, just rename the file
-        if (fs.existsSync(tempMp3Path)) {
+        // Add ID3 tags
+        try {
+          const tags = {
+            title: videoInfo.title || 'Unknown',
+            artist: videoInfo.uploader || 'Unknown',
+            album: 'YouTube',
+            year: new Date().getFullYear().toString(),
+          };
+          
+          // Rename the file to final path
           fs.renameSync(tempMp3Path, finalMp3Path);
+          
+          // Write ID3 tags
+          NodeID3.write(tags, finalMp3Path);
+          
+          console.log(`Downloaded and converted: ${title} (ID: ${id})`);
+          
+          // No need to send response here as we've already responded to the client
+        } catch (tagError) {
+          console.error(`Error adding ID3 tags for ${id}:`, tagError);
+          // Continue even if tagging fails, just rename the file
+          if (fs.existsSync(tempMp3Path)) {
+            fs.renameSync(tempMp3Path, finalMp3Path);
+          }
         }
         
-        sendResponse(200, {
-          success: true,
-          title: title,
-          downloadUrl: `/downloads/${id}.mp3`,
-          fileName: `${title}.mp3`,
-        });
+      } catch (ytdlpError) {
+        console.error(`yt-dlp error for ${id}:`, ytdlpError);
+        
+        // Clean up any partial files
+        if (fs.existsSync(tempMp3Path)) {
+          fs.unlinkSync(tempMp3Path);
+        }
+        if (fs.existsSync(finalMp3Path)) {
+          fs.unlinkSync(finalMp3Path);
+        }
+        
+        throw new Error('Download failed. YouTube may be blocking this request.');
       }
-    } catch (ytdlpError) {
-      console.error('yt-dlp error:', ytdlpError);
-      
-      // Clean up any partial files
-      if (fs.existsSync(tempMp3Path)) {
-        fs.unlinkSync(tempMp3Path);
-      }
-      if (fs.existsSync(finalMp3Path)) {
-        fs.unlinkSync(finalMp3Path);
-      }
-      
-      sendResponse(500, { error: 'Download failed. YouTube may be blocking this request. Please try again later.' });
+    } finally {
+      // Always decrement active downloads counter, even if there was an error
+      decrementActiveDownloads();
     }
   } catch (error) {
-    console.error('Unexpected error:', error);
+    console.error('Unexpected error in download route:', error);
+    // If we haven't sent a response yet, send an error response
     sendResponse(500, { error: 'An unexpected error occurred. Please try again.' });
+    // Make sure to decrement the counter if we had an early error
+    decrementActiveDownloads();
   }
 });
 
