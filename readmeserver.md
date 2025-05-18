@@ -120,7 +120,7 @@ PM2 is a process manager for Node.js applications that helps keep your app runni
 
 ```bash
 # Install PM2 globally
-sudo npm install -g pm2
+npm install -g pm2
 
 # Start the application with PM2
 pm2 start server.js --name youtube-mp3-downloader
@@ -178,6 +178,7 @@ server {
 
     # -------------------------------------------------
     # App API (Node.js on port 3000)
+    # With WebSocket support
     # -------------------------------------------------
     location / {
         proxy_pass         http://127.0.0.1:3000;
@@ -186,6 +187,11 @@ server {
         proxy_set_header   X-Real-IP         $remote_addr;
         proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
         proxy_set_header   X-Forwarded-Proto $scheme;
+        
+        # WebSocket-specific headers (✅ required!)
+        proxy_set_header   Upgrade $http_upgrade;
+        proxy_set_header   Connection "upgrade";
+        proxy_cache_bypass $http_upgrade;
     }
 
     # Basic hardening / limits (tweak as needed)
@@ -210,7 +216,7 @@ sudo systemctl restart nginx
 sudo apt install -y certbot python3-certbot-nginx
 
 # Obtain and install SSL certificate
-sudo certbot --nginx -d ezplay.tclsoftwarehouse.com -d www.ezplay.tclsoftwarehouse.com
+sudo certbot --nginx -d ezplay.tclsoftwarehouse.com
 
 # Optional: confirm timer was installed
 sudo systemctl list-timers | grep certbot
@@ -218,8 +224,6 @@ sudo systemctl list-timers | grep certbot
 # Optional: run a dry-run renewal test
 sudo certbot renew --dry-run
 
-# just confirm the set up work 
-sudo certbot renew --dry-run
 
 
 # Follow the prompts to complete the setup

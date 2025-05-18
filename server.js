@@ -65,7 +65,10 @@ const chatLimiter = rateLimit({
 });
 
 // Middleware
-app.use(cors());
+app.set('trust proxy', true);
+app.use(cors(
+  {origin: "*"}
+));
 app.use(express.json());
 app.use(express.static('public'));
 app.use('/downloads', express.static('downloads'));
@@ -76,12 +79,7 @@ if (!fs.existsSync(downloadsDir)) {
   fs.mkdirSync(downloadsDir, { recursive: true });
 }
 
-// Create images directory if it doesn't exist
-const imagesDir = path.join('/var/www/assets', 'images');
-
-if (!fs.existsSync(imagesDir)) {
-  fs.mkdirSync(imagesDir, { recursive: true });
-}
+// const downloadsDir = path.join(__dirname, 'downloads');
 
 // Apply rate limiters to specific routes
 app.use('/api/user', authLimiter); // Auth routes

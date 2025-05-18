@@ -12,7 +12,7 @@ const { incrementActiveDownloads, decrementActiveDownloads, canAcceptDownload, g
 
 // Get downloads directory path
 const downloadsDir = path.join('/var/www/assets', 'downloads');
-
+// const downloadsDir = path.join(__dirname, 'downloads');
 // Ensure downloads directory exists
 if (!fs.existsSync(downloadsDir)) {
   fs.mkdirSync(downloadsDir, { recursive: true });
