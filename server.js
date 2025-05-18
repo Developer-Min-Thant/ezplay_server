@@ -65,7 +65,7 @@ const chatLimiter = rateLimit({
 });
 
 // Middleware
-app.set('trust proxy', true);
+app.set('trust proxy', 'loopback');
 app.use(cors(
   {origin: "*"}
 ));

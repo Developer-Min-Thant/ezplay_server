@@ -97,15 +97,7 @@ router.post('/', checkDownloadEligibility, async (req, res) => {
     
     console.log(`Found video: ${videoInfo.title}`);
     
-    // Send initial response to client that download is starting
-    res.status(200).json({
-      success: true,
-      message: 'Download is starting',
-      title: title,
-      id: id,
-      downloadUrl: `/downloads/${id}.mp3`,
-      fileName: `${title}.mp3`
-    });
+   
     
     // Set response as sent since we've already responded to the client
     responseSent = true;
@@ -134,6 +126,17 @@ router.post('/', checkDownloadEligibility, async (req, res) => {
       
         console.log(`Download completed for ${id}, adding ID3 tags...`);
         
+
+        // Send initial response to client that download is starting
+        res.status(200).json({
+          success: true,
+          message: 'Download is completed',
+          title: title,
+          id: id,
+          downloadUrl: `/downloads/${id}.mp3`,
+          fileName: `${title}.mp3`
+        });
+
         // Add ID3 tags
         try {
           const tags = {
