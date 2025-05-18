@@ -61,14 +61,11 @@ yt-dlp --version
 sudo apt install -y git
 
 # Clone the repository
-git clone https://github.com/yourusername/youtube-mp3-downloader.git
-cd youtube-mp3-downloader
+git clone https://github.com/tclsoftwarehouse/ezplay_server.git
+cd ezplay_server
 
 # Install dependencies
 npm install
-
-# Create downloads directory if it doesn't exist
-mkdir -p downloads
 ```
 
 ## Step 5: Update the Application Configuration
@@ -142,43 +139,67 @@ pm2 save
 # Install Nginx
 sudo apt install -y nginx
 
-# Configure Nginx
-sudo nano /etc/nginx/sites-available/youtube-mp3-downloader
-```
+sudo mkdir -p /var/www/assets/downloads
+sudo mkdir -p /var/www/assets/images
+sudo chown -R www-data:www-data /var/www/assets
+sudo chmod -R 755 /var/www/assets
 
-Add the following configuration (replace `yourdomain.com` with your domain):
+
+# Configure Nginx
+sudo nano /etc/nginx/sites-available/ezplay.tclsoftwarehouse.com
+```
 
 ```nginx
 server {
     listen 80;
-    server_name yourdomain.com www.yourdomain.com;
+    server_name ezplay.tclsoftwarehouse.com www.ezplay.tclsoftwarehouse.com;
 
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        
-        # Increase timeouts for large file downloads
-        proxy_read_timeout 300;
-        proxy_connect_timeout 300;
-        proxy_send_timeout 300;
+    # -------------------------------------------------
+    # Static MP3 downloads
+    # -------------------------------------------------
+    location /downloads/ {
+        root /var/www/assets;         
+        sendfile on;
+        tcp_nopush on;
+        add_header Content-Disposition "attachment";
+        add_header Accept-Ranges bytes;
+        add_header Cache-Control "public, max-age=86400";
+        try_files $uri =404;
     }
 
-    # Configure larger file uploads
-    client_max_body_size 50M;
+    # -------------------------------------------------
+    # Static images
+    # -------------------------------------------------
+    location /images/ {
+        root /var/www/assets;         
+        sendfile on;
+        try_files $uri =404;
+    }
+
+    # -------------------------------------------------
+    # App API (Node.js on port 3000)
+    # -------------------------------------------------
+    location / {
+        proxy_pass         http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+    }
+
+    # Basic hardening / limits (tweak as needed)
+    client_max_body_size 20m;
+    server_tokens off;
 }
+
 ```
 
 Enable the site and restart Nginx:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/youtube-mp3-downloader /etc/nginx/sites-enabled/
-sudo nginx -t  # Test the configuration
+sudo ln -s /etc/nginx/sites-available/ezplay.tclsoftwarehouse.com /etc/nginx/sites-enabled/
+sudo nginx -t 
 sudo systemctl restart nginx
 ```
 
@@ -189,7 +210,17 @@ sudo systemctl restart nginx
 sudo apt install -y certbot python3-certbot-nginx
 
 # Obtain and install SSL certificate
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
+sudo certbot --nginx -d ezplay.tclsoftwarehouse.com -d www.ezplay.tclsoftwarehouse.com
+
+# Optional: confirm timer was installed
+sudo systemctl list-timers | grep certbot
+
+# Optional: run a dry-run renewal test
+sudo certbot renew --dry-run
+
+# just confirm the set up work 
+sudo certbot renew --dry-run
+
 
 # Follow the prompts to complete the setup
 ```
@@ -233,16 +264,6 @@ YouTube frequently changes their site, so you'll need to update yt-dlp regularly
 
 ```bash
 sudo yt-dlp -U
-```
-
-### Backing Up MongoDB
-
-```bash
-# Create a backup directory
-mkdir -p ~/mongodb-backups
-
-# Backup the database
-mongodump --db youtube-downloader --out ~/mongodb-backups/$(date +"%Y-%m-%d")
 ```
 
 ### Updating the Application

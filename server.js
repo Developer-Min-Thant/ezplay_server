@@ -8,12 +8,8 @@ const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const http = require('http');
 const socketIo = require('socket.io');
-const jwt = require('jsonwebtoken');
 const { createAdapter } = require('@socket.io/mongo-adapter');
 const rateLimit = require('express-rate-limit');
-const User = require('./models/user.model');
-const ChatMessage = require('./models/chat.model');
-const ChatLimit = require('./models/chatlimit.model');
 const SocketService = require('./services/socket.service');
 const { initSupabaseCron } = require('./utils/supabaseCron');
 
@@ -75,14 +71,14 @@ app.use(express.static('public'));
 app.use('/downloads', express.static('downloads'));
 
 // Create downloads directory if it doesn't exist
-const downloadsDir = path.join('/var/www/ezplay_server', 'downloads');
-
+const downloadsDir = path.join('/var/www/assets', 'downloads');
 if (!fs.existsSync(downloadsDir)) {
   fs.mkdirSync(downloadsDir, { recursive: true });
 }
 
 // Create images directory if it doesn't exist
-const imagesDir = path.join('/var/www/ezplay_server', 'images');
+const imagesDir = path.join('/var/www/assets', 'images');
+
 if (!fs.existsSync(imagesDir)) {
   fs.mkdirSync(imagesDir, { recursive: true });
 }

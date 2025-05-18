@@ -11,7 +11,7 @@ const { protect, checkDownloadEligibility } = require('../middleware/auth');
 const { incrementActiveDownloads, decrementActiveDownloads, canAcceptDownload, getActiveDownloads, MAX_CONCURRENT_DOWNLOADS } = require('../services/concurrency.service');
 
 // Get downloads directory path
-const downloadsDir = path.join('/var/www/ezplay_server', 'downloads');
+const downloadsDir = path.join('/var/www/assets', 'downloads');
 
 // Ensure downloads directory exists
 if (!fs.existsSync(downloadsDir)) {
