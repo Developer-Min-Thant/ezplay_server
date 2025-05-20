@@ -103,7 +103,7 @@ router.get('/user', protect, async (req, res) => {
 // router.get('/register', async (req, res) => {
 //     try {
 //         const name = "EzplayAdmin";
-//         const password = "admin123";
+//         const password = "@ez!admin123";
 //         console.log("Registering admin");
         
 

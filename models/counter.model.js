@@ -5,4 +5,4 @@ const counterSchema = new mongoose.Schema({
   sequence_value: Number,
 });
 
-module.exports = mongoose.model('UidCounter', counterSchema);
+module.exports = mongoose.model('Counter', counterSchema);
