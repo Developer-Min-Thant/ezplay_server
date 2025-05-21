@@ -92,6 +92,10 @@ router.post('/phone-login', async (req, res) => {
       const today = new Date().toISOString().split('T')[0];
       const record = await OtpRequest.findOne({ phone, date: today });
 
+      if (!isValidMyanmarPhone(phone)) {
+        return res.status(400).json({ message: 'Invalid phone number' });
+      }
+
       if (record && record.count >= 3) {
         return res.status(429).json({ message: 'You have reached the OTP resend limit for today' });
       }
@@ -277,6 +281,13 @@ router.post('/social-login', async (req, res) => {
   }
 });
 
+
+
+function isValidMyanmarPhone(number) {
+  const cleaned = number.replace(/\s+/g, '');
+  const regex = /^(?:\+?95|0)(1\d{5,7}|9\d{7,9}|8\d{6,8}|2\d{5,7}|3\d{5,7}|4\d{5,7}|5\d{5,7}|6\d{5,7}|7\d{5,7})$/;
+  return regex.test(cleaned);
+}
 
 
 async function getNextUserId() {

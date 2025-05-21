@@ -154,6 +154,12 @@ server {
     listen 80;
     server_name ezplay.tclsoftwarehouse.com www.ezplay.tclsoftwarehouse.com;
 
+    location / {
+        root /var/www/html/adminsiteweb;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+    }
+
     # -------------------------------------------------
     # Static MP3 downloads
     # -------------------------------------------------
@@ -180,7 +186,7 @@ server {
     # App API (Node.js on port 3000)
     # With WebSocket support
     # -------------------------------------------------
-    location / {
+    location /api/ {
         proxy_pass         http://127.0.0.1:3000;
         proxy_http_version 1.1;
         proxy_set_header   Host              $host;
@@ -188,11 +194,21 @@ server {
         proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
         proxy_set_header   X-Forwarded-Proto $scheme;
         
-        # WebSocket-specific headers (✅ required!)
+
+    }
+    
+    # WebSocket-specific headers (✅ required!)
+    location /socket.io/ {
+        proxy_pass         http://127.0.0.1:3000/socket.io/;
+        proxy_http_version 1.1;
         proxy_set_header   Upgrade $http_upgrade;
         proxy_set_header   Connection "upgrade";
+        proxy_set_header   Host $host;
         proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 86400s;
+        proxy_buffering off;
     }
+
 
     # Basic hardening / limits (tweak as needed)
     client_max_body_size 20m;
