@@ -281,7 +281,30 @@ router.post('/social-login', async (req, res) => {
   }
 });
 
-
+// delete user by uid
+router.delete('/delete-user', protect, async (req, res) => {
+  try {
+    const { uid } = req.body;
+    const user = await User.findOneAndDelete({ uid });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during user deletion',
+      error: error.message
+    });
+  }
+});
 
 function isValidMyanmarPhone(number) {
   const cleaned = number.replace(/\s+/g, '');
