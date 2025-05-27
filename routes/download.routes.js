@@ -32,10 +32,16 @@ ytDlp.getVersion()
 
 // Get active downloads status route
 router.get('/active-downloads', protect, (req, res) => {
-  res.status(200).json({
-    success: true,
-    activeDownloads: getActiveDownloads(),
-    maxConcurrent: MAX_CONCURRENT_DOWNLOADS
+  if(req.user.isAdmin){
+    res.status(200).json({
+      success: true,
+      activeDownloads: getActiveDownloads(),
+      maxConcurrent: MAX_CONCURRENT_DOWNLOADS
+    });
+  }
+  res.status(404).json({
+    success: false,
+    message: 'You are not authorized to access this route'
   });
 });
 

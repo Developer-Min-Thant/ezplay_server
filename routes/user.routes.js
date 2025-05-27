@@ -12,7 +12,9 @@ router.post('/check-user', protect, async (req, res) => {
   try {
     const { deviceId } = req.body;
 
-    if(deviceId && req.user.deviceId !== deviceId) {
+    const user = await User.findOne({ uid: req.user.uid });
+
+    if(deviceId && user.deviceId !== deviceId) {
       return res.status(401).json({
         success: false,
         message: 'Device ID does not match'
@@ -22,8 +24,8 @@ router.post('/check-user', protect, async (req, res) => {
     // Return user data (excluding password)
     res.status(200).json({
       success: true,
-      ispremiumActive: req.user.ispremiumActive,
-      premiumExpirationDate: req.user.premiumExpirationDate
+      ispremiumActive: user.ispremiumActive,
+      premiumExpirationDate: user.premiumExpirationDate
     });
   } catch (error) {
     console.error('User check error:', error);
