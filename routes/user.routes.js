@@ -14,6 +14,8 @@ router.post('/check-user', protect, async (req, res) => {
 
     const user = await User.findOne({ uid: req.user.uid });
 
+    console.log(deviceId, user.deviceId);
+
     if(deviceId && user.deviceId !== deviceId) {
       return res.status(401).json({
         success: false,
