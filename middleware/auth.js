@@ -77,7 +77,7 @@ exports.checkDownloadEligibility = async (req, res, next) => {
       if(user.totalDownloads >= 10){
         return res.status(401).json({
           success: false,
-          message: 'User is not premium or has exceeded download limit'
+          message: 'User is has exceeded download limit'
         });
       }
     }
