@@ -248,7 +248,7 @@ router.post('/social-login', async (req, res) => {
       });
       const authToken = generateToken(user.uid, 'user', user.ispremiumActive);
 
-      res.status(201).json({
+      res.status(200).json({
         success: true,
         uid: user.uid,
         name: user.name,
