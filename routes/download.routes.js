@@ -133,16 +133,6 @@ router.post('/', checkDownloadEligibility, async (req, res) => {
         console.log(`Download completed for ${id}, adding ID3 tags...`);
         
 
-        // Send initial response to client that download is starting
-        res.status(200).json({
-          success: true,
-          message: 'Download is completed',
-          title: title,
-          id: id,
-          downloadUrl: `/downloads/${id}.mp3`,
-          fileName: `${title}.mp3`
-        });
-
         // Add ID3 tags
         try {
           const tags = {
@@ -186,12 +176,21 @@ router.post('/', checkDownloadEligibility, async (req, res) => {
       // Always decrement active downloads counter, even if there was an error
       decrementActiveDownloads();
     }
+
+    // Send initial response to client that download is starting
+    res.status(200).json({
+      success: true,
+      message: 'Download is completed',
+      title: title,
+      id: id,
+      downloadUrl: `/downloads/${id}.mp3`,
+      fileName: `${title}.mp3`
+    });
+    
   } catch (error) {
     console.error('Unexpected error in download route:', error);
     // If we haven't sent a response yet, send an error response
     sendResponse(500, { error: 'An unexpected error occurred. Please try again.' });
-    // Make sure to decrement the counter if we had an early error
-    decrementActiveDownloads();
   }
 });
 
