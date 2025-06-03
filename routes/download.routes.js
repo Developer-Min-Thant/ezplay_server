@@ -246,6 +246,10 @@ router.get('/mp3-size', async (req, res) => {
       ? `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`
       : 'Unknown size';
 
+    console.log('Title:', title);
+    console.log('Uploader:', uploader);
+    console.log('Final artist:', artist);
+      
     sendResponse(200, {
       artist,
       size: sizeFormatted
