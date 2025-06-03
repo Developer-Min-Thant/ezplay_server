@@ -249,7 +249,8 @@ router.get('/mp3-size', async (req, res) => {
     console.log('Title:', title);
     console.log('Uploader:', uploader);
     console.log('Final artist:', artist);
-      
+    console.log('Size:', sizeFormatted);
+
     sendResponse(200, {
       artist,
       size: sizeFormatted
