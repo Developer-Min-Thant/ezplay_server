@@ -14,8 +14,8 @@ const { incrementActiveDownloads, decrementActiveDownloads, canAcceptDownload, g
 const FFMPEG_LOCATION = process.env.FFMPEG_LOCATION || '/usr/bin/ffmpeg';
 
 // Get downloads directory path
-// const downloadsDir = path.join('/var/www/assets', 'downloads');
-const downloadsDir = path.join(__dirname, 'downloads');
+const downloadsDir = path.join('/var/www/assets', 'downloads');
+// const downloadsDir = path.join(__dirname, 'downloads');
 // Ensure downloads directory exists
 if (!fs.existsSync(downloadsDir)) {
   fs.mkdirSync(downloadsDir, { recursive: true });
@@ -26,10 +26,10 @@ const youtubeRegex = /^(https?:\/\/)?(www\.|m\.)?(youtube\.com|youtu\.?be)\/.+/;
 
 // Initialize yt-dlp with the system-installed binary
 // Todo:: For local mac
-const ytDlp = new YTDlpWrap('/opt/homebrew/bin/yt-dlp');
+// const ytDlp = new YTDlpWrap('/opt/homebrew/bin/yt-dlp');
 
 // Todo:: For Server 
-// const ytDlp= new YTDlpWrap("/usr/local/bin/yt-dlp");
+const ytDlp= new YTDlpWrap("/usr/local/bin/yt-dlp");
 
 // Check if yt-dlp is available
 ytDlp.getVersion()

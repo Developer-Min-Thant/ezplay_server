@@ -82,8 +82,8 @@ app.use(express.static('public'));
 app.use('/downloads', express.static('downloads'));
 
 // Create downloads directory if it doesn't exist
-// const downloadsDir = path.join('/var/www/assets', 'downloads');
-const downloadsDir = path.join(__dirname, 'downloads');
+const downloadsDir = path.join('/var/www/assets', 'downloads');
+// const downloadsDir = path.join(__dirname, 'downloads');
 
 if (!fs.existsSync(downloadsDir)) {
   fs.mkdirSync(downloadsDir, { recursive: true });
