@@ -10,9 +10,12 @@ const ffmpegPath = require('ffmpeg-static');
 const { protect, checkDownloadEligibility } = require('../middleware/auth');
 const { incrementActiveDownloads, decrementActiveDownloads, canAcceptDownload, getActiveDownloads, MAX_CONCURRENT_DOWNLOADS } = require('../services/concurrency.service');
 
+// Get ffmpeg location from environment variable or use default
+const FFMPEG_LOCATION = process.env.FFMPEG_LOCATION || '/usr/bin/ffmpeg';
+
 // Get downloads directory path
-const downloadsDir = path.join('/var/www/assets', 'downloads');
-// const downloadsDir = path.join(__dirname, 'downloads');
+// const downloadsDir = path.join('/var/www/assets', 'downloads');
+const downloadsDir = path.join(__dirname, 'downloads');
 // Ensure downloads directory exists
 if (!fs.existsSync(downloadsDir)) {
   fs.mkdirSync(downloadsDir, { recursive: true });
@@ -22,8 +25,11 @@ if (!fs.existsSync(downloadsDir)) {
 const youtubeRegex = /^(https?:\/\/)?(www\.|m\.)?(youtube\.com|youtu\.?be)\/.+/;
 
 // Initialize yt-dlp with the system-installed binary
-// const ytDlp = new YTDlpWrap('/opt/homebrew/bin/yt-dlp');
-const ytDlp= new YTDlpWrap("/usr/local/bin/yt-dlp");
+// Todo:: For local mac
+const ytDlp = new YTDlpWrap('/opt/homebrew/bin/yt-dlp');
+
+// Todo:: For Server 
+// const ytDlp= new YTDlpWrap("/usr/local/bin/yt-dlp");
 
 // Check if yt-dlp is available
 ytDlp.getVersion()
@@ -121,7 +127,7 @@ router.post('/', checkDownloadEligibility, async (req, res) => {
           '--output', tempMp3Path,
           '--no-playlist',
           '--no-warnings',
-          '--ffmpeg-location', '/usr/bin/ffmpeg',
+          '--ffmpeg-location', FFMPEG_LOCATION,
           url
         ];
         
@@ -198,11 +204,12 @@ router.post('/', checkDownloadEligibility, async (req, res) => {
 // Get MP3 size route
 router.get('/mp3-size', protect, async (req, res) => {
   const videoUrl = req.query.videoId;
-  
-  // Flag to track if response has been sent
+
+  if (!videoUrl || !youtubeRegex.test(videoUrl)) {
+    return res.status(400).json({ error: 'Invalid or missing YouTube URL' });
+  }
+
   let responseSent = false;
-  
-  // Function to safely send response
   const sendResponse = (status, data) => {
     if (!responseSent) {
       responseSent = true;
@@ -211,29 +218,62 @@ router.get('/mp3-size', protect, async (req, res) => {
   };
 
   try {
-    // Use yt-dlp to get file size estimation
-    const sizeArgs = [
-      '--print', 'filesize_approx',
+    const args = [
+      '--print', '%artist\n%filesize_approx',
       '--no-playlist',
       '--extract-audio',
       '--audio-format', 'mp3',
-      '--ffmpeg-location', '/opt/homebrew/bin/ffmpeg', // Specify ffmpeg location
+      '--ffmpeg-location', FFMPEG_LOCATION,
       videoUrl
     ];
-    
-    const result = await ytDlp.execPromise(sizeArgs);
-    const sizeInBytes = parseInt(result.trim(), 10);
-    
-    if (isNaN(sizeInBytes)) {
-      sendResponse(200, { size: 'Unknown size' });
-    } else {
-      const sizeInMB = (sizeInBytes / (1024 * 1024)).toFixed(1);
-      sendResponse(200, { size: `${sizeInMB} MB` });
-    }
+
+    const result = await ytDlp.execPromise(args);
+    const [artistRaw, sizeRaw] = result.trim().split('\n');
+
+    const artist = artistRaw.trim() || 'Unknown artist';
+    const sizeInBytes = parseInt(sizeRaw.trim(), 10);
+    const sizeFormatted = !isNaN(sizeInBytes)
+      ? `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`
+      : 'Unknown size';
+
+    sendResponse(200, {
+      artist,
+      size: sizeFormatted
+    });
+
   } catch (error) {
-    console.error('Error getting file size:', error);
-    sendResponse(500, { error: 'Could not determine file size' });
+    console.error('Metadata fetch error:', error);
+    sendResponse(500, { error: 'Failed to fetch metadata' });
   }
 });
+
+
+
+const { spawn } = require('child_process');
+
+router.post('/stream', async (req, res) => {
+  const { url } = req.body;
+
+  if (!youtubeRegex.test(url)) {
+    return res.status(400).json({ error: 'Invalid YouTube URL' });
+  }
+
+  res.setHeader('Content-Type', 'audio/mp4');
+  res.setHeader('Content-Disposition', `attachment; filename="audio.m4a"`);
+
+  const ytdlpProcess = spawn('yt-dlp', [
+    '-f', 'bestaudio[ext=m4a]/bestaudio',
+    '--no-playlist',
+    '-o', '-',
+    url
+  ]);
+
+  ytdlpProcess.stdout.pipe(res);
+
+  ytdlpProcess.stderr.on('data', (data) => console.error(`yt-dlp stderr: ${data}`));
+  ytdlpProcess.on('close', (code) => console.log(`yt-dlp process exited with code ${code}`));
+});
+
+
 
 module.exports = router;

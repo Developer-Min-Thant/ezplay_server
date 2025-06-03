@@ -98,6 +98,30 @@ router.get('/user', protect, async (req, res) => {
     }
 });
 
+router.get('/users', protect, async (req, res) => {
+    try {
+        // pagination
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 100;
+        const skip = (page - 1) * limit;
+        const users = await User.find().sort({ uid: 1 }).skip(skip).limit(limit);
+        res.status(200).json({
+            success: true,
+            users,
+            page,
+            limit,
+            total: await User.countDocuments()
+        });
+    } catch (error) {
+        console.error('Error getting users:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error during user retrieval',
+            error: error.message
+        });
+    }
+});
+
 // 
 // admin register
 // router.get('/register', async (req, res) => {

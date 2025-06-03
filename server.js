@@ -48,9 +48,17 @@ const authLimiter = rateLimit({
   message: { success: false, message: 'Too many authentication attempts, please try again later.' }
 });
 
+const adminLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 1000, // Limit each IP to 20 login/register attempts per hour
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many authentication attempts, please try again later.' }
+});
+
 const downloadLimiter = rateLimit({
   windowMs: 30 * 60 * 1000, // 30 minutes
-  max: 30, // Limit each IP to 20 download requests per 30 minutes
+  max: 50, // Limit each IP to 20 download requests per 30 minutes
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many download requests, please try again later.' }
@@ -74,8 +82,8 @@ app.use(express.static('public'));
 app.use('/downloads', express.static('downloads'));
 
 // Create downloads directory if it doesn't exist
-const downloadsDir = path.join('/var/www/assets', 'downloads');
-// const downloadsDir = path.join(__dirname, 'downloads');
+// const downloadsDir = path.join('/var/www/assets', 'downloads');
+const downloadsDir = path.join(__dirname, 'downloads');
 
 if (!fs.existsSync(downloadsDir)) {
   fs.mkdirSync(downloadsDir, { recursive: true });

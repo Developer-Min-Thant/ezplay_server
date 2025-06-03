@@ -5,9 +5,8 @@ const fs = require('fs');
 // Set up storage for uploaded files
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join('/var/www/assets', 'images');
-    // Todo:: change 
-    // const uploadDir = path.join(__dirname, 'images');
+    // const uploadDir = path.join('/var/www/assets', 'images');
+    const uploadDir = path.join(__dirname, 'images');
 
     // Ensure the directory exists
     if (!fs.existsSync(uploadDir)) {
