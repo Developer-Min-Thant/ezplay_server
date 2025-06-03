@@ -14,8 +14,9 @@ const { incrementActiveDownloads, decrementActiveDownloads, canAcceptDownload, g
 const FFMPEG_LOCATION = process.env.FFMPEG_LOCATION || '/usr/bin/ffmpeg';
 
 // Get downloads directory path
-const downloadsDir = path.join('/var/www/assets', 'downloads');
-// const downloadsDir = path.join(__dirname, 'downloads');
+const DOWNLOAD_LOCATION = process.env.DOWNLOAD_LOCATION || '/var/www/assets';
+const downloadsDir = path.join(DOWNLOAD_LOCATION, 'downloads');
+
 // Ensure downloads directory exists
 if (!fs.existsSync(downloadsDir)) {
   fs.mkdirSync(downloadsDir, { recursive: true });
@@ -25,11 +26,8 @@ if (!fs.existsSync(downloadsDir)) {
 const youtubeRegex = /^(https?:\/\/)?(www\.|m\.)?(youtube\.com|youtu\.?be)\/.+/;
 
 // Initialize yt-dlp with the system-installed binary
-// Todo:: For local mac
-// const ytDlp = new YTDlpWrap('/opt/homebrew/bin/yt-dlp');
-
-// Todo:: For Server 
-const ytDlp= new YTDlpWrap("/usr/local/bin/yt-dlp");
+const YTDLP_LOCATION = process.env.YTDLP_LOCATION || '/usr/local/bin/yt-dlp';
+const ytDlp = new YTDlpWrap(YTDLP_LOCATION);
 
 // Check if yt-dlp is available
 ytDlp.getVersion()
@@ -262,7 +260,7 @@ router.post('/stream', async (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="audio.m4a"`);
 
   const ytdlpProcess = spawn('yt-dlp', [
-    '-f', 'bestaudio[ext=m4a]/bestaudio',
+    '-f', '140', // format code 140 = m4a/aac
     '--no-playlist',
     '-o', '-',
     url
