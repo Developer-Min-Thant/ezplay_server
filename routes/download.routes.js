@@ -9,6 +9,7 @@ const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
 const { protect, checkDownloadEligibility } = require('../middleware/auth');
 const { incrementActiveDownloads, decrementActiveDownloads, canAcceptDownload, getActiveDownloads, MAX_CONCURRENT_DOWNLOADS } = require('../services/concurrency.service');
+const { log } = require('console');
 
 // Get ffmpeg location from environment variable or use default
 const FFMPEG_LOCATION = process.env.FFMPEG_LOCATION || '/usr/bin/ffmpeg';
@@ -247,31 +248,190 @@ router.get('/mp3-size', protect, async (req, res) => {
 
 
 
-const { spawn } = require('child_process');
+// Stream YouTube content directly to client
+router.get('/stream', async (req, res) => {
+  const videoUrl = req.query.url;
 
-router.post('/stream', async (req, res) => {
-  const { url } = req.body;
-
-  if (!youtubeRegex.test(url)) {
-    return res.status(400).json({ error: 'Invalid YouTube URL' });
+  if (!videoUrl || !youtubeRegex.test(videoUrl)) {
+    return res.status(400).json({ error: 'Invalid or missing YouTube URL' });
   }
 
-  res.setHeader('Content-Type', 'audio/mp4');
-  res.setHeader('Content-Disposition', `attachment; filename="audio.m4a"`);
-
-  const ytdlpProcess = spawn('yt-dlp', [
-    '-f', '140', // format code 140 = m4a/aac
+  // Create a unique ID for this download
+  const tempId = uuidv4();
+  const tempFile = path.join(downloadsDir, `${tempId}.m4a`);
+    
+  // Use the simpler execPromise method instead of spawn
+  const downloadArgs = [
     '--no-playlist',
-    '-o', '-',
-    url
-  ]);
-
-  ytdlpProcess.stdout.pipe(res);
-
-  ytdlpProcess.stderr.on('data', (data) => console.error(`yt-dlp stderr: ${data}`));
-  ytdlpProcess.on('close', (code) => console.log(`yt-dlp process exited with code ${code}`));
+    '--format', 'bestaudio[ext=m4a]/bestaudio',
+    '--no-warnings',
+    '--output', tempFile,
+    videoUrl
+  ];
+  
+  try {
+    // First download the file
+    await ytDlp.execPromise(downloadArgs);
+    
+    // Check if file exists
+    if (!fs.existsSync(tempFile)) {
+      console.error('Downloaded file not found');
+      return res.status(500).json({ error: 'Downloaded file not found' });
+    }
+    
+    // Set headers for streaming
+    res.setHeader('Content-Type', 'audio/mp4');
+    res.setHeader('Content-Disposition', `attachment; filename="youtube_audio.m4a"`);
+    
+    // Stream the file to the client
+    const fileStream = fs.createReadStream(tempFile);
+    
+    // Handle file stream errors
+    fileStream.on('error', (err) => {
+      console.error('Error streaming file:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Error streaming file' });
+      } else {
+        res.end();
+      }
+      
+      // Clean up the file
+      try {
+        if (fs.existsSync(tempFile)) {
+          fs.unlinkSync(tempFile);
+        }
+      } catch (cleanupErr) {
+        console.error('Error cleaning up file after stream error:', cleanupErr);
+      }
+    });
+    
+    // Clean up the file after streaming is complete
+    fileStream.on('close', () => {
+      console.log('File stream closed');
+      try {
+        if (fs.existsSync(tempFile)) {
+          fs.unlinkSync(tempFile);
+          console.log(`Temporary file deleted: ${tempFile}`);
+        }
+      } catch (cleanupErr) {
+        console.error('Error cleaning up file after streaming:', cleanupErr);
+      }
+    });
+    
+    // Pipe the file to the response
+    fileStream.pipe(res);
+    
+    // Handle client disconnect
+    req.on('close', () => {
+      console.log('Client disconnected, cleaning up');
+      try {
+        if (fs.existsSync(tempFile)) {
+          fs.unlinkSync(tempFile);
+          console.log(`Temporary file deleted after client disconnect: ${tempFile}`);
+        }
+      } catch (cleanupErr) {
+        console.error('Error cleaning up file after client disconnect:', cleanupErr);
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error downloading or streaming:', error);
+    
+    // Clean up any partial downloads
+    try {
+      if (fs.existsSync(tempFile)) {
+        fs.unlinkSync(tempFile);
+      }
+    } catch (cleanupErr) {
+      console.error('Error cleaning up file after error:', cleanupErr);
+    }
+    
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to download or stream content' });
+    } else {
+      res.end();
+    }
+  }
 });
 
 
+// Stream YouTube content directly to client without saving to disk
+router.get('/stream-one', async (req, res) => {
+  const videoUrl = req.query.url;
+
+  console.log(videoUrl);
+  if (!videoUrl || !youtubeRegex.test(videoUrl)) {
+    return res.status(400).json({ error: 'Invalid or missing YouTube URL' });
+  }
+
+  try {
+    // Set headers for streaming
+    res.setHeader('Content-Type', 'audio/mp4');
+    res.setHeader('Content-Disposition', `attachment; filename="youtube_audio.m4a"`);
+    
+    // Use child_process directly for better control
+    const { spawn } = require('child_process');
+    
+    // Create the yt-dlp process with arguments to output to stdout
+    const ytDlpProcess = spawn(YTDLP_LOCATION, [
+      '--no-playlist',
+      '--format', 'bestaudio[ext=m4a]/bestaudio',
+      '--no-warnings',
+      '-o', '-', // Output to stdout
+      videoUrl
+    ]);
+    
+    // Flag to track if we've sent headers
+    let headersSent = false;
+    
+    // Pipe stdout directly to response
+    ytDlpProcess.stdout.on('data', (data) => {
+      // Only set flag after first data chunk is received
+      headersSent = true;
+      // Write data to response
+      res.write(data);
+    });
+    
+    // Handle stderr (for logging)
+    ytDlpProcess.stderr.on('data', (data) => {
+      console.error(`yt-dlp stderr: ${data.toString()}`);
+    });
+    
+    // Handle process completion
+    ytDlpProcess.on('close', (code) => {
+      console.log(`yt-dlp process exited with code ${code}`);
+      if (code === 0) {
+        // Success - end the response
+        res.end();
+      } else if (!headersSent) {
+        // Error before sending any data
+        res.status(500).json({ error: 'Failed to stream content' });
+      } else {
+        // Error after sending some data - just end the response
+        res.end();
+      }
+    });
+    
+    // Handle process errors
+    ytDlpProcess.on('error', (error) => {
+      console.error('yt-dlp process error:', error);
+      if (!headersSent) {
+        res.status(500).json({ error: 'Failed to start streaming process' });
+      } else {
+        res.end();
+      }
+    });
+    
+    // Handle client disconnect
+    req.on('close', () => {
+      console.log('Client disconnected, killing yt-dlp process');
+      ytDlpProcess.kill();
+    });
+    
+  } catch (error) {
+    console.error('Error in stream setup:', error);
+    res.status(500).json({ error: 'Failed to set up streaming' });
+  }
+});
 
 module.exports = router;
