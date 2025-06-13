@@ -11,11 +11,7 @@ const Counter = require('../models/counter.model');
 router.post('/check-user', protect, async (req, res) => {
   try {
     const { deviceId } = req.body;
-
     const user = await User.findOne({ uid: req.user.uid });
-
-    console.log(deviceId, user.deviceId);
-
     if(deviceId && user.deviceId !== deviceId) {
       return res.status(401).json({
         success: false,
@@ -23,7 +19,6 @@ router.post('/check-user', protect, async (req, res) => {
       });
     }
 
-    // Return user data (excluding password)
     res.status(200).json({
       success: true,
       ispremiumActive: user.ispremiumActive,

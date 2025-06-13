@@ -201,7 +201,7 @@ router.post('/', checkDownloadEligibility, async (req, res) => {
 
 
 // Get MP3 size route
-router.get('/mp3-size', async (req, res) => {
+router.get('/mp3-size', protect, async (req, res) => {
   const videoUrl = req.query.videoId;
 
   if (!videoUrl || !youtubeRegex.test(videoUrl)) {
@@ -255,121 +255,9 @@ router.get('/mp3-size', async (req, res) => {
   }
 });
 
-
-
-// Stream YouTube content directly to client
-// router.get('/stream', async (req, res) => {
-//   const videoUrl = req.query.url;
-
-//   if (!videoUrl || !youtubeRegex.test(videoUrl)) {
-//     return res.status(400).json({ error: 'Invalid or missing YouTube URL' });
-//   }
-
-//   // Create a unique ID for this download
-//   const tempId = uuidv4();
-//   const tempFile = path.join(downloadsDir, `${tempId}.m4a`);
-    
-//   // Use the simpler execPromise method instead of spawn
-//   const downloadArgs = [
-//     '--no-playlist',
-//     '--format', 'bestaudio[ext=m4a]/bestaudio',
-//     '--no-warnings',
-//     '--output', tempFile,
-//     videoUrl
-//   ];
-  
-//   try {
-//     // First download the file
-//     await ytDlp.execPromise(downloadArgs);
-    
-//     // Check if file exists
-//     if (!fs.existsSync(tempFile)) {
-//       console.error('Downloaded file not found');
-//       return res.status(500).json({ error: 'Downloaded file not found' });
-//     }
-    
-//     // Set headers for streaming
-//     res.setHeader('Content-Type', 'audio/mp4');
-//     res.setHeader('Content-Disposition', `attachment; filename="youtube_audio.m4a"`);
-    
-//     // Stream the file to the client
-//     const fileStream = fs.createReadStream(tempFile);
-    
-//     // Handle file stream errors
-//     fileStream.on('error', (err) => {
-//       console.error('Error streaming file:', err);
-//       if (!res.headersSent) {
-//         res.status(500).json({ error: 'Error streaming file' });
-//       } else {
-//         res.end();
-//       }
-      
-//       // Clean up the file
-//       try {
-//         if (fs.existsSync(tempFile)) {
-//           fs.unlinkSync(tempFile);
-//         }
-//       } catch (cleanupErr) {
-//         console.error('Error cleaning up file after stream error:', cleanupErr);
-//       }
-//     });
-    
-//     // Clean up the file after streaming is complete
-//     fileStream.on('close', () => {
-//       console.log('File stream closed');
-//       try {
-//         if (fs.existsSync(tempFile)) {
-//           fs.unlinkSync(tempFile);
-//           console.log(`Temporary file deleted: ${tempFile}`);
-//         }
-//       } catch (cleanupErr) {
-//         console.error('Error cleaning up file after streaming:', cleanupErr);
-//       }
-//     });
-    
-//     // Pipe the file to the response
-//     fileStream.pipe(res);
-    
-//     // Handle client disconnect
-//     req.on('close', () => {
-//       console.log('Client disconnected, cleaning up');
-//       try {
-//         if (fs.existsSync(tempFile)) {
-//           fs.unlinkSync(tempFile);
-//           console.log(`Temporary file deleted after client disconnect: ${tempFile}`);
-//         }
-//       } catch (cleanupErr) {
-//         console.error('Error cleaning up file after client disconnect:', cleanupErr);
-//       }
-//     });
-    
-//   } catch (error) {
-//     console.error('Error downloading or streaming:', error);
-    
-//     // Clean up any partial downloads
-//     try {
-//       if (fs.existsSync(tempFile)) {
-//         fs.unlinkSync(tempFile);
-//       }
-//     } catch (cleanupErr) {
-//       console.error('Error cleaning up file after error:', cleanupErr);
-//     }
-    
-//     if (!res.headersSent) {
-//       res.status(500).json({ error: 'Failed to download or stream content' });
-//     } else {
-//       res.end();
-//     }
-//   }
-// });
-
-
 // Stream YouTube content directly to client without saving to disk
-// Todo:: need to add protect 
-router.get('/stream-one', async (req, res) => {
+router.get('/stream-one', checkDownloadEligibility, async (req, res) => {
   const videoUrl = req.query.url;
-
-  console.log(videoUrl);
   if (!videoUrl || !youtubeRegex.test(videoUrl)) {
     return res.status(400).json({ error: 'Invalid or missing YouTube URL' });
   }
