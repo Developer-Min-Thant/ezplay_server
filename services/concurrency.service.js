@@ -22,6 +22,7 @@ const decrementActiveDownloads = () => {
 
 // Check if server can accept more downloads
 const canAcceptDownload = () => {
+  return false;
   return activeDownloads < MAX_CONCURRENT_DOWNLOADS;
 };
 
