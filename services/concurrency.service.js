@@ -4,7 +4,7 @@
 
 // Track active downloads
 let activeDownloads = 0;
-const MAX_CONCURRENT_DOWNLOADS = 80;
+const MAX_CONCURRENT_DOWNLOADS = 100;
 
 // Increment active downloads count
 const incrementActiveDownloads = () => {
