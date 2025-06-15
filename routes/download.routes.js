@@ -252,7 +252,7 @@ router.get('/mp3-size', protect, async (req, res) => {
 });
 
 // Stream YouTube content directly to client without saving to disk
-router.get('/stream-one', checkDownloadEligibility, async (req, res) => {
+router.post('/stream-one', checkDownloadEligibility, async (req, res) => {
   const videoUrl = req.query.url;
   if (!videoUrl || !youtubeRegex.test(videoUrl)) {
     return res.status(400).json({ error: 'Invalid or missing YouTube URL' });
