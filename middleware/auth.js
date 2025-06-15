@@ -66,7 +66,7 @@ exports.checkDownloadEligibility = async (req, res, next) => {
       });
     }
     if(user.deviceId !== req.body.deviceId){
-      return res.status(403).json({
+      return res.status(401).json({
         success: false,
         message: 'Device ID mismatch'
       });
