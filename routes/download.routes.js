@@ -5,11 +5,8 @@ const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const YTDlpWrap = require('yt-dlp-wrap').default;
 const NodeID3 = require('node-id3');
-const ffmpeg = require('fluent-ffmpeg');
-const ffmpegPath = require('ffmpeg-static');
 const { protect, checkDownloadEligibility } = require('../middleware/auth');
 const { incrementActiveDownloads, decrementActiveDownloads, canAcceptDownload, getActiveDownloads, MAX_CONCURRENT_DOWNLOADS } = require('../services/concurrency.service');
-const { log } = require('console');
 
 // Get ffmpeg location from environment variable or use default
 const FFMPEG_LOCATION = process.env.FFMPEG_LOCATION || '/usr/bin/ffmpeg';
@@ -199,7 +196,6 @@ router.post('/', checkDownloadEligibility, async (req, res) => {
   }
 });
 
-
 // Get MP3 size route
 router.get('/mp3-size', protect, async (req, res) => {
   const videoUrl = req.query.videoId;
@@ -263,6 +259,19 @@ router.get('/stream-one', checkDownloadEligibility, async (req, res) => {
   }
 
   try {
+    // Check if server can accept more downloads
+    if (!canAcceptDownload()) {
+      return res.status(429).json({
+        success: false,
+        message: 'Server is currently busy processing other downloads. Please try again later.',
+        activeDownloads: getActiveDownloads(),
+        maxConcurrent: MAX_CONCURRENT_DOWNLOADS
+      });
+    }
+    
+    // Increment active downloads counter
+    incrementActiveDownloads();
+
     // Set headers for streaming
     res.setHeader('Content-Type', 'audio/mp4');
     res.setHeader('Content-Disposition', `attachment; filename="youtube_audio.m4a"`);
@@ -329,6 +338,8 @@ router.get('/stream-one', checkDownloadEligibility, async (req, res) => {
   } catch (error) {
     console.error('Error in stream setup:', error);
     res.status(500).json({ error: 'Failed to set up streaming' });
+  } finally {
+    decrementActiveDownloads();
   }
 });
 

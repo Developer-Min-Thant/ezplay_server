@@ -79,7 +79,6 @@ router.post('/update-user-premium', protect, async (req, res) => {
     }
 });
 
-
 router.get('/user', protect, async (req, res) => {
     try {
         const { uid } = req.query;
