@@ -197,7 +197,7 @@ router.post('/', checkDownloadEligibility, async (req, res) => {
 });
 
 // Get MP3 size route
-router.get('/mp3-size', protect, async (req, res) => {
+router.get('/mp3-size', async (req, res) => {
   const videoUrl = req.query.videoId;
 
   if (!videoUrl || !youtubeRegex.test(videoUrl)) {
@@ -213,20 +213,20 @@ router.get('/mp3-size', protect, async (req, res) => {
   };
 
   try {
-    const args = [
-      '--print', '%(title)s\n%(uploader)s\n%filesize_approx',
+    // First get title and uploader
+    const infoArgs = [
+      '--print', '%(title)s\n%(uploader)s',
       '--no-playlist',
-      '--format', 'bestaudio',
+      '--format', 'bestaudio[ext=m4a]/bestaudio',
       videoUrl
     ];
 
-    const result = await ytDlp.execPromise(args);
-    const lines = result.trim().split('\n');
+    const infoResult = await ytDlp.execPromise(infoArgs);
+    const infoLines = infoResult.trim().split('\n');
     
-    // Extract title, artist, and size from the result
-    const title = lines[0] || 'Unknown title';
-    const uploader = lines[1] || 'Unknown artist';
-    const sizeRaw = lines[2] || '0';
+    // Extract title and artist from the result
+    const title = infoLines[0] || 'Unknown title';
+    const uploader = infoLines[1] || 'Unknown artist';
     
     // Try to extract artist from title (common format: "Artist - Song Name")
     let artist = uploader;
@@ -237,14 +237,46 @@ router.get('/mp3-size', protect, async (req, res) => {
       }
     }
     
-    const sizeInBytes = parseInt(sizeRaw.trim(), 10);
-    const sizeFormatted = !isNaN(sizeInBytes)
-      ? `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`
-      : '4.5 MB';
-    sendResponse(200, {
-      artist,
-      size: sizeFormatted
-    });
+    // Now get the exact file size
+    const sizeArgs = [
+      '--print', 'filesize',
+      '--no-playlist',
+      '--format', 'bestaudio[ext=m4a]/bestaudio',
+      videoUrl
+    ];
+    
+    const sizeResult = await ytDlp.execPromise(sizeArgs);
+    const sizeInBytes = parseInt(sizeResult.trim(), 10);
+    
+    // If we got a valid size, use it; otherwise fall back to filesize_approx
+    if (!isNaN(sizeInBytes) && sizeInBytes > 0) {
+      const sizeFormatted = `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`;
+      sendResponse(200, {
+        artist,
+        size: sizeFormatted,
+        sizeInBytes: sizeInBytes // Include raw bytes for client-side calculations
+      });
+    } else {
+      // Fallback to approximate size
+      const approxArgs = [
+        '--print', 'filesize_approx',
+        '--no-playlist',
+        '--format', 'bestaudio[ext=m4a]/bestaudio',
+        videoUrl
+      ];
+      
+      const approxResult = await ytDlp.execPromise(approxArgs);
+      const approxSizeInBytes = parseInt(approxResult.trim(), 10);
+      const sizeFormatted = !isNaN(approxSizeInBytes)
+        ? `${(approxSizeInBytes / (1024 * 1024)).toFixed(1)} MB`
+        : '4.5 MB';
+      
+      sendResponse(200, {
+        artist,
+        size: sizeFormatted,
+        sizeInBytes: approxSizeInBytes || 4718592, // ~4.5MB as fallback
+      });
+    }
   } catch (error) {
     console.error('Metadata fetch error:', error);
     sendResponse(500, { error: 'Failed to fetch metadata' });
