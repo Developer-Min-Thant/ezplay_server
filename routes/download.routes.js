@@ -197,7 +197,7 @@ router.post('/', checkDownloadEligibility, async (req, res) => {
 });
 
 // Get MP3 size route
-router.get('/mp3-size', async (req, res) => {
+router.get('/mp3-size', protect, async (req, res) => {
   const videoUrl = req.query.videoId;
 
   if (!videoUrl || !youtubeRegex.test(videoUrl)) {
