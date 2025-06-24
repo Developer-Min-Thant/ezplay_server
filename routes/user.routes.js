@@ -12,6 +12,13 @@ router.post('/check-user', protect, async (req, res) => {
   try {
     const { deviceId } = req.body;
     const user = await User.findOne({ uid: req.user.uid });
+
+    // check the user is premium or not using the premium expiry date
+    if(user.premiumExpirationDate < new Date()){
+      user.ispremiumActive = false;
+      await user.save();
+    }
+    
     if(deviceId && user.deviceId !== deviceId) {
       return res.status(401).json({
         success: false,

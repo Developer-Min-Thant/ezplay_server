@@ -73,8 +73,10 @@ exports.checkDownloadEligibility = async (req, res, next) => {
       });
     }
 
-
-    if(!user.ispremiumActive) {
+    // check the user is premium or not using the premium expiry date
+    if(user.premiumExpirationDate < new Date()){
+      user.ispremiumActive = false;
+      await user.save();
       if(user.totalDownloads >= 10){
         return res.status(403).json({
           success: false,
